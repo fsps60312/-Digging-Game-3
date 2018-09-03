@@ -73,6 +73,7 @@
     <Compile Include="Keyboard.cs" />
     <Compile Include="Memory Monitor.cs" />
     <Compile Include="Models\Pod.Body.cs" />
+    <Compile Include="Models\Pod.Drill.Blade.cs" />
     <Compile Include="Models\Pod.Drill.cs" />
     <Compile Include="Models\Pod.Propeller.BladeSet.Blade.cs" />
     <Compile Include="Models\Pod.Propeller.BladeSet.cs" />

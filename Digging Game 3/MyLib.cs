@@ -41,6 +41,20 @@ namespace Digging_Game_3
             public MatrixTransform3D Value { get { return new MatrixTransform3D(v); } }
             public MyTrans Copy() { return new MyTrans(v); }
         }
+        public class MyTransSetter
+        {
+            MyTrans trans;
+            Action<MatrixTransform3D> setAction;
+            public MyTransSetter(List<Transform3D>list,int index,bool restart)
+            {
+                trans = new MyTrans(restart ? new MatrixTransform3D() : list[index]);
+                setAction = new Action<MatrixTransform3D>(v => list[index] = trans.Value);
+            }
+            public void Done() { setAction(trans.Value); }
+            public MyTransSetter RotatePrepend(Vector3D axis, double angleRad) { trans.RotatePrepend(axis, angleRad);return this; }
+            public MyTransSetter TranslatePrepend(Vector3D a) { trans.TranslatePrepend(a); return this; }
+        }
+        public static MyTransSetter Set(List<Transform3D> list, int index,bool restart=false) { return new MyTransSetter(list, index,restart); }
         public static MyTrans Transform(IMy3DObject a) { return new MyTrans(a.Model.Transform); }
         public static MyTrans Transform(Model3D a) { return new MyTrans(a.Transform); }
         public static MyTrans Transform(Transform3D a) { return new MyTrans(a); }
@@ -66,6 +80,7 @@ namespace Digging_Game_3
         //    Trace.Assert((double)prop.GetValue(target) == t);
         //}
         public static void CopyTo(Point3D p, out double x, out double y, out double z) { x = p.X; y = p.Y; z = p.Z; }
+        public static void CopyTo(Vector3D p, out double x, out double y, out double z) { x = p.X; y = p.Y; z = p.Z; }
         public static void SmoothTo(ref double v,double t,double secs,double timeToHalf)
         {
             ///f = a x      ### f: location-velocity
@@ -75,6 +90,22 @@ namespace Digging_Game_3
             ///x = Exp(secs / timeToHalf * ln(0.5))
             double x = Math.Exp(secs / timeToHalf * Math.Log(0.5));
             v = v * x + t * (1 - x);
+        }
+        public static void SmoothTo(ref Point3D v, Point3D t, double secs, double timeToHalf)
+        {
+            CopyTo(v, out double x, out double y, out double z);
+            SmoothTo(ref x, t.X, secs, timeToHalf);
+            SmoothTo(ref y, t.Y, secs, timeToHalf);
+            SmoothTo(ref z, t.Z, secs, timeToHalf);
+            v = new Point3D(x, y, z);
+        }
+        public static void SmoothTo(ref Vector3D v, Vector3D t, double secs, double timeToHalf)
+        {
+            CopyTo(v, out double x, out double y, out double z);
+            SmoothTo(ref x, t.X, secs, timeToHalf);
+            SmoothTo(ref y, t.Y, secs, timeToHalf);
+            SmoothTo(ref z, t.Z, secs, timeToHalf);
+            v = new Vector3D(x, y, z);
         }
         public static bool All<T1>(this T1[]a,Func<int,T1,bool>predicate)
         {

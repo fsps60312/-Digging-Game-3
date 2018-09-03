@@ -7,69 +7,23 @@ namespace Digging_Game_3.Models
 {
     partial class Pod
     {
-        class Drill : My3DObject
+        /// <summary>
+        /// A Drill point to Vector3D(0,0,1)
+        /// </summary>
+        partial class Drill : My3DObject
         {
-            class Blade : My3DObject
-            {
-                public Blade(double radius,double coneAngle,double attackAngle, Color color) : base(radius,coneAngle, attackAngle, color) { }
-                double _Folding;
-                public double Folding
-                {
-                    get { return _Folding; }
-                    set
-                    {
-                        setFoldingAction(value);
-                        _Folding = value;
-                    }
-                }
-                Action<double> setFoldingAction = null;
-                protected override Model3D CreateModel(params object[] vs)
-                {
-                    MyLib.AssertTypes(vs, typeof(double),typeof(double),typeof(double), typeof(Color));
-                    double r = (double)vs[0];
-                    double coneAngle = (double)vs[1];
-                    double attackAngle = (double)vs[2];
-                    var color = (Color)vs[3];
-                    double R = r / Math.Cos(coneAngle);
-                    var blade = My3DGraphics.NewModel().AddTriangles(new[] { new Point3D(0, 0, 0), new Point3D(R, 0, 0), new Point3D(R, R / 7, 0), new Point3D(0, R / 30, 0) }, new[] { 0, 1, 2, 0, 2, 3, 3, 2, 0, 2, 1, 0 }).CreateModel(new SolidColorBrush(color));
-                    var bladeOriginTransform = blade.Transform;
-                    double supportThickness = R / 100;
-                    var support = My3DGraphics.NewModel().AddTriangles(
-                        new[] { new Point3D(0, 0, -supportThickness), new Point3D(R / 2, 0, -supportThickness), new Point3D(0, supportThickness, -supportThickness), new Point3D(R / 2, supportThickness, -supportThickness), new Point3D(0, 0, 0), new Point3D(R / 2, 0, 0), new Point3D(0, supportThickness, 0), new Point3D(R / 2, supportThickness, 0) },
-                        ///6 7
-                        ///4 5
-                        ///
-                        ///2 3
-                        ///0 1
-                        new[]
-                        {
-                            0,2,3,0,3,1,
-                            4,5,7,4,7,6,
-                            0,1,5,0,5,4,
-                            2,6,7,2,7,3,
-                            0,4,6,0,6,2,
-                            1,3,7,1,7,5
-                        }).CreateModel(new SolidColorBrush(Colors.Gray));
-                    var supportOriginTransform = support.Transform;
-                    var ans = new Model3DGroup();
-                    ans.Children.Add(blade);
-                    ans.Children.Add(support);
-                    System.Diagnostics.Trace.WriteLine($"coneangle={coneAngle},{coneAngle / Math.PI * 180}");
-                    setFoldingAction = new Action<double>(folding =>
-                      {
-                          double angle = coneAngle + folding * (Math.PI / 2 - coneAngle);
-                          blade.Transform = MyLib.Transform(bladeOriginTransform).TranslatePrepend(new Vector3D(0.5 * R*Math.Cos(angle),0, 0.5 * R * Math.Sin(angle))).RotatePrepend(new Vector3D(0, 1, 0), angle).TranslatePrepend(new Vector3D(-R / 2, 0, 0)).RotatePrepend(new Vector3D(1, 0, 0), attackAngle).Value;
-                          support.Transform = MyLib.Transform(supportOriginTransform).Rotate(new Vector3D(0, 1, 0), -angle).Value;
-                      });
-                    setFoldingAction(0);
-                    return ans;
-                }
-            }
+            const int TransformIndexWithdraw = 0;
+            const int TransformIndexRotate = 1;
+            public double Radius { get; private set; }
+            public double ConeAngle { get; private set; }
             public Drill(double radius, double bladeCount) : base(radius, bladeCount)
             {
+                SubTransforms.Add(new MatrixTransform3D());//Withdraw
+                SubTransforms.Add(new MatrixTransform3D());//Rotate
                 Kernel.Heart.Beat += (secs) =>
                 {
-                    Model.Transform = MyLib.Transform(Model).RotatePrepend(new Vector3D(0, 0, 1), secs * Math.PI).Value;
+                    MyLib.Set(SubTransforms, TransformIndexRotate).RotatePrepend(new Vector3D(0, 0, 1), secs * Math.PI).Done();
+                    UpdateTransform();
                 };
             }
             double _Folding;
@@ -78,23 +32,36 @@ namespace Digging_Game_3.Models
                 get { return _Folding; }
                 set
                 {
-                    foreach (var blade in blades) blade.Folding = value;
+                    const double ratio = 0.3;
+                    if (value < ratio)
+                    {
+                        double f = value / ratio;
+                        foreach (var v in blades) v.Folding = f;
+                        MyLib.Set(SubTransforms, TransformIndexWithdraw, true).Done();
+                    }
+                    else
+                    {
+                        double f = (value - ratio) / (1 - ratio);
+                        foreach (var v in blades) v.Folding = 1;
+                        MyLib.Set(SubTransforms, TransformIndexWithdraw, true).TranslatePrepend(new Vector3D(0, 0, -f * Radius / Math.Cos(ConeAngle))).Done();
+                    }
                     _Folding = value;
+                    UpdateTransform();
                 }
             }
             List<Blade> blades;
             protected override Model3D CreateModel(params object[] vs)
             {
                 MyLib.AssertTypes(vs, typeof(double), typeof(double));
-                double r = (double)vs[0];
+                double r = Radius = (double)vs[0];
                 double n = (double)vs[1];
+                double coneAngle = ConeAngle = MyLib.ToRad(50);
                 blades = new List<Blade>();
                 Model3DGroup ans = new Model3DGroup();
-                double coneAngle = MyLib.ToRad(50);
                 for (int i = 0; i < n; i++)
                 {
                     double a = Math.PI * 2 * i / n;
-                    var blade = new Blade(r,coneAngle,MyLib.ToRad(40), new[] { Colors.DarkGray, Colors.DarkSlateGray, Colors.DimGray, Colors.Gray, Colors.LightGray, Colors.LightSlateGray, Colors.SlateGray }[MyLib.Rand.Next(7)]);
+                    var blade = new Blade(r, coneAngle, MyLib.ToRad(40), new[] { Colors.DarkGray, Colors.DarkSlateGray, Colors.DimGray, Colors.Gray, Colors.LightGray, Colors.LightSlateGray, Colors.SlateGray }[MyLib.Rand.Next(7)]);
                     blade.Transform = MyLib.Transform(new MatrixTransform3D()).Rotate(new Vector3D(0, 0, 1), a)/*.Translate(new Vector3D(0, 0, r * Math.Tan(coneAngle)))*/.Value;
                     blades.Add(blade);
                     ans.Children.Add(blade.Model);

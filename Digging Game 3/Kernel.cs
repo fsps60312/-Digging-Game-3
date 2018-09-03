@@ -14,6 +14,7 @@ namespace Digging_Game_3
         {
             public static Transform3D BaseTransform=new MatrixTransform3D();
             public static Point3D position=new Point3D(1,0,0);
+            public static Vector3D lookDirection = new Vector3D(0,0,-1);
         }
         public static class Heart
         {
@@ -22,10 +23,16 @@ namespace Digging_Game_3
             public static void MakeBeat(double secs)
             {
                 Beat?.Invoke(secs);
-                Kernel.Camera.Transform =
-                    MyLib.Transform(CameraProperties.BaseTransform)
-                    .Translate(CameraProperties.position - new Point3D())
-                    .Value;
+                var trans = MyLib.Transform(CameraProperties.BaseTransform);
+                trans = trans.TranslatePrepend(CameraProperties.position - new Point3D());
+                var cross = Vector3D.CrossProduct(Kernel.Camera.LookDirection, CameraProperties.lookDirection);
+                if (cross.Length != 0)
+                {
+                    var dot = Vector3D.DotProduct(Kernel.Camera.LookDirection, CameraProperties.lookDirection);
+                    var angle = Math.Acos(dot / Kernel.Camera.LookDirection.Length / CameraProperties.lookDirection.Length);
+                    trans = trans.RotatePrepend(cross, angle);
+                }
+                Kernel.Camera.Transform = trans.Value;
             }
         }
     }

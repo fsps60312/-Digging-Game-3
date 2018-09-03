@@ -19,7 +19,14 @@ namespace Digging_Game_3
             get { return Model.Transform; }
             set { Model.Transform = value; }
         }
-        public Transform3D OriginTransform { get; set; } = new MatrixTransform3D();
+        public Transform3D OriginTransform = new MatrixTransform3D();
+        public List<Transform3D> SubTransforms { get; set; } = new List<Transform3D> { };
+        public void UpdateTransform()
+        {
+            var transform = new MatrixTransform3D(OriginTransform.Value);
+            foreach (var t in SubTransforms) transform.Matrix = t.Value * transform.Matrix;
+            Transform = transform;
+        }
         protected abstract Model3D CreateModel(params object[]vs);
         protected My3DObject(params object[]vs)
         {

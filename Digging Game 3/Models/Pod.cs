@@ -15,7 +15,7 @@ namespace Digging_Game_3.Models
             propeller.Transform=propeller.OriginTransform = MyLib.Transform(propeller).TranslatePrepend(new Vector3D(0,1.5,0)).RotatePrepend(new Vector3D(1, 0, 0), MyLib.ToRad(-90)).Value;
             body = new Body();
             drill = new Drill(1.5, 50);
-            drill.Transform = MyLib.Transform(drill).TranslatePrepend(new Vector3D(1.5, 0, 0)).RotatePrepend(new Vector3D(0, 1, 0), MyLib.ToRad(90)).Value;
+            drill.Transform = drill.OriginTransform = MyLib.Transform(drill).TranslatePrepend(new Vector3D(1.5, 0, 0)).RotatePrepend(new Vector3D(0, 1, 0), MyLib.ToRad(90)).Value;
             var ans = new Model3DGroup();
             ans.Children.Add(propeller.Model);
             ans.Children.Add(body.Model);
@@ -37,11 +37,8 @@ namespace Digging_Game_3.Models
                 if (Keyboard.IsDown(System.Windows.Input.Key.S)) RB.force -= new Vector3D(0, f, 0);
                 RB.Update(secs);
                 Model.Transform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
-                MyLib.CopyTo(Kernel.CameraProperties.position, out double x, out double y, out double z);
-                MyLib.SmoothTo(ref x, RB.position.X, secs, 0.5);
-                MyLib.SmoothTo(ref y, RB.position.Y, secs, 0.5);
-                MyLib.SmoothTo(ref z, RB.position.Z, secs, 0.5);
-                Kernel.CameraProperties.position = new Point3D(x, y, z);
+                MyLib.SmoothTo(ref Kernel.CameraProperties.position, RB.position + new Vector3D(0, 0, 20),secs,0.5);
+                MyLib.SmoothTo(ref Kernel.CameraProperties.lookDirection, RB.position - Kernel.CameraProperties.position, secs, 0.5);
                 //this.Folding = 1;
             };
         }
