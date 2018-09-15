@@ -13,17 +13,31 @@ namespace Digging_Game_3
         public Vector3D velocity;
         public Vector3D force;
         public double mass = 1;
-        public double fraction = 0;
-        public void Update(double secs)
+
+        public double theta = 0;
+        public double omega = 0;
+        public double alpha = 0;
+        public double momentOfInertia = 1.0 / 6; //rectangle's inertia: 1/12 m * (w*2 + h*2)
+
+        //public void ApplyFraction(ref Vector3D f,double fraction)
+        //{
+        //    f = -velocity * fraction * mass;
+        //}
+        public void Update(double secs, double appliedFraction = 0)
         {
-            var preV = velocity;
-            var f = force;
-            if (fraction != 0)
             {
-                f -= velocity * fraction * mass;
+                var preV = velocity;
+                var f = force;
+                velocity += f / mass * secs;
+                if (appliedFraction != 0) velocity -= velocity * appliedFraction * secs;
+                position += (preV + velocity) / 2 * secs;
             }
-            velocity += f / mass * secs;
-            position += (preV + velocity) / 2 * secs;
+            {
+                var preV = omega;
+                var f = alpha;
+                omega += f / momentOfInertia * secs;
+                theta += (preV + omega) / 2 * secs;
+            }
         }
     }
 }

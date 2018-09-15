@@ -12,6 +12,7 @@ namespace Digging_Game_3.Models
         {
             partial class BladeSet : My3DObject
             {
+                const int TransformIndexTheta = 0;
                 public enum Types { Basic }
                 static readonly Dictionary<Types, Description> Descriptions = new Dictionary<Types, Description>
                 {
@@ -54,11 +55,13 @@ namespace Digging_Game_3.Models
                         _Folding = value;
                     }
                 }
-                public BladeSet(Types type, double radius, bool reversed,double speedRatio,double angleOffset) : base(type, radius, reversed,speedRatio,angleOffset)
+                public Propeller Parent { get; private set; }
+                public BladeSet(Propeller parent, Types type, double radius, bool reversed, double speedRatio, double angleOffset) : base(parent, type, radius, reversed, speedRatio, angleOffset)
                 {
                     Kernel.Heart.Beat += (secs) =>
                     {
-                        Model.Transform = MyLib.Transform(Model).RotatePrepend(new Vector3D(0, 0, 1), (Reversed ? -1 : 1) * (secs * SpeedRatio * Math.PI*5)).Value;
+                        MyLib.Set(SubTransforms, TransformIndexTheta, false).RotatePrepend(new Vector3D(0, 0, 1), (Reversed ? -1 : 1) * (secs * SpeedRatio * Math.PI * Parent.omega)).Done();
+                        UpdateTransform();
                     };
                 }
                 Model3DGroup CreateModel(Description description,double radius)
@@ -72,15 +75,17 @@ namespace Digging_Game_3.Models
                         Blades.Add(blade);
                         ans.Children.Add(blade.Model);
                     }
+                    SubTransforms.Add(new MatrixTransform3D());//theta
                     return ans;
                 }
                 protected override Model3D CreateModel(params object[] vs)
                 {
-                    MyLib.AssertTypes(vs, typeof(Types), typeof(double), typeof(bool), typeof(double), typeof(double));
-                    Reversed = (bool)vs[2];
-                    SpeedRatio = (double)vs[3];
-                    AngleOffset = (double)vs[4];
-                    return CreateModel(Descriptions[(Types)vs[0]], (double)vs[1]);
+                    MyLib.AssertTypes(vs,typeof(Propeller), typeof(Types), typeof(double), typeof(bool), typeof(double), typeof(double));
+                    Parent = vs[0] as Propeller;
+                    Reversed = (bool)vs[3];
+                    SpeedRatio = (double)vs[4];
+                    AngleOffset = (double)vs[5];
+                    return CreateModel(Descriptions[(Types)vs[1]], (double)vs[2]);
                 }
             }
         }

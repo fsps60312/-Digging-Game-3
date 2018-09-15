@@ -23,19 +23,19 @@ namespace Digging_Game_3.Models
             //AddSphere(ans);
             return ans;
         }
-        RigidBody RB = new RigidBody { fraction = 5 };
+        RigidBody RB = new RigidBody();
         public Pod():base()
         {
             Kernel.Heart.Beat += (secs) =>
             {
-                propeller.Folding = drill.Folding = System.Math.Abs(System.DateTime.Now.Ticks % 100000000 - 50000000) / 50000000.0;
+                drill.Folding = System.Math.Abs(System.DateTime.Now.Ticks % 100000000 - 50000000) / 50000000.0;
                 RB.force = new Vector3D();
                 const double f = 50;
                 if (Keyboard.IsDown(System.Windows.Input.Key.A)) RB.force -= new Vector3D(f, 0, 0);
                 if (Keyboard.IsDown(System.Windows.Input.Key.D)) RB.force += new Vector3D(f, 0, 0);
                 if (Keyboard.IsDown(System.Windows.Input.Key.W)) RB.force += new Vector3D(0, f, 0);
                 if (Keyboard.IsDown(System.Windows.Input.Key.S)) RB.force -= new Vector3D(0, f, 0);
-                RB.Update(secs);
+                RB.Update(secs, 5);
                 Model.Transform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
                 MyLib.SmoothTo(ref Kernel.CameraProperties.position, RB.position + new Vector3D(0, 0, 20),secs,0.5);
                 MyLib.SmoothTo(ref Kernel.CameraProperties.lookDirection, RB.position - Kernel.CameraProperties.position, secs, 0.5);

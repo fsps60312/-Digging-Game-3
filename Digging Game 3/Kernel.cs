@@ -32,6 +32,7 @@ namespace Digging_Game_3
                     var angle = Math.Acos(dot / Kernel.Camera.LookDirection.Length / CameraProperties.lookDirection.Length);
                     trans = trans.RotatePrepend(cross, angle);
                 }
+                //if (Keyboard.IsDown(System.Windows.Input.Key.Z)) System.Diagnostics.Trace.WriteLine(CameraProperties.position-new Point3D());
                 Kernel.Camera.Transform = trans.Value;
             }
         }

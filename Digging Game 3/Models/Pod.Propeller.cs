@@ -3,11 +3,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using System.Windows.Media;
+using System.Windows.Input;
 
 namespace Digging_Game_3.Models
 {
     partial class Pod
     {
+        partial class Propeller : My3DObject
+        {
+            public double omega = 5;
+            public class PropertyDescription
+            {
+                public double friction=1;
+                public double momentOfInertia=1;
+                public double maxPower=10;//最大功率
+                public double minPower=2;//負旋最大功率
+                public double maxTorque=10;//最大扭力
+                public double foldingTime=0.5;//用時
+            }
+            public PropertyDescription Properties = new PropertyDescription();
+        }
         partial class Propeller:My3DObject
         {
             public enum Types { Basic }
@@ -21,8 +36,8 @@ namespace Digging_Game_3.Models
                     })
                 }
             };
-            List<BladeSet> BladeSets = new List<BladeSet>();
-            double _Folding = 0;
+            private List<BladeSet> BladeSets = new List<BladeSet>();
+            private double _Folding = 0;
             public double Folding
             {
                 get { return _Folding; }
@@ -69,8 +84,34 @@ namespace Digging_Game_3.Models
                     BladeSets = bladeSets;
                 }
             }
-            public Propeller(Types propellerType) : base(propellerType) { }
-            double Height, MaxHeight;
+            public Func<bool> IsOnGround = new Func<bool>(() => false);
+            public Propeller(Types propellerType) : base(propellerType)
+            {
+                bool foldingTarget = false;
+                Kernel.Heart.Beat += (secs) =>
+                {
+                    double torque = omega > 0 ? -Properties.friction : Properties.friction;
+                    if (Keyboard.IsDown(Key.W))
+                    {
+                        torque += Math.Min(Properties.maxTorque, omega > 0 ? Properties.maxPower / omega : double.MaxValue);
+                        foldingTarget = false;
+                    }
+                    if (Keyboard.IsDown(Key.S))
+                    {
+                        torque -= Math.Min(Properties.maxTorque, omega < 0 ? Properties.minPower / (-omega) : double.MaxValue);
+                        foldingTarget = true;
+                    }
+                    if(foldingTarget) Folding = Math.Min(1, Folding + secs / Properties.foldingTime);
+                    else Folding = Math.Max(0, Folding - secs / Properties.foldingTime);
+                    omega += secs * torque;
+                    if(!Keyboard.IsDown(Key.W)&&!Keyboard.IsDown(Key.S))
+                    {
+                        foldingTarget = IsOnGround();
+                        if ((torque > 0) == (omega > 0)) omega = 0;//摩擦力讓速度歸零
+                    }
+                };
+            }
+            private double Height, MaxHeight;
             Model3DGroup CreateModel(Description description)
             {
                 Model3DGroup ans = new Model3DGroup();
@@ -78,12 +119,13 @@ namespace Digging_Game_3.Models
                 foreach(var bladeSetDescription in description.BladeSets)
                 {
                     var bladeSet = new BladeSet(
+                        this,
                         bladeSetDescription.Type,
                         bladeSetDescription.Radius,
                         bladeSetDescription.Reversed,
                         bladeSetDescription.SpeedRatio,
                         bladeSetDescription.AngleOffset);
-                    bladeSet.Transform = MyLib.Transform(bladeSet).Translate(new Vector3D(0, 0, bladeSetDescription.Height)).Value;
+                    bladeSet.Transform = bladeSet.OriginTransform = MyLib.Transform(bladeSet).Translate(new Vector3D(0, 0, bladeSetDescription.Height)).Value;
                     BladeSets.Add(bladeSet);
                     ans.Children.Add(bladeSet.Model);
                 }
