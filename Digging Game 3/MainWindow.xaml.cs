@@ -21,7 +21,7 @@ namespace Digging_Game_3
     /// </summary>
     public partial class MainWindow : Window
     {
-        Viewport3D mainViewPort;
+        public static Viewport3D mainViewPort;
         //Light EnvironmentLight = new DirectionalLight(Colors.White, new Vector3D(2, 3, 1));
         
         Model3D model;
@@ -29,7 +29,6 @@ namespace Digging_Game_3
         {
             //MessageBox.Show((RenderCapability.Tier>>16).ToString());
             RenderOptions.SetEdgeMode(mainViewPort, EdgeMode.Aliased);
-            mainViewPort.RenderSize = new Size(50, 30);
             //mainViewPort.Effect = new System.Windows.Media.Effects.BlurEffect { /*Radius = 5*/ };
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
@@ -47,33 +46,70 @@ namespace Digging_Game_3
                 statisticTime = time;
             }
         }
-
+        //UIElement SetPosition(UIElement uIElement,int row,int column)
+        //{
+        //    Grid.SetRow(uIElement, row);
+        //    Grid.SetColumn(uIElement, column);
+        //    return uIElement;
+        //}
+        public const double HeightRatio = 1.0 / 4 * 3;
         void InitializeViews()
         {
-            this.Content = mainViewPort = new Viewport3D { ClipToBounds = false, IsHitTestVisible = false };
-            
+            mainViewPort = new Viewport3D { ClipToBounds = true, IsHitTestVisible = false, MinHeight = HeightRatio, MinWidth = 1 };
+            this.Content = new Viewbox
+            {
+                StretchDirection = StretchDirection.Both,
+                Stretch = Stretch.Uniform,
+                Child = mainViewPort
+            };
+            //this.Content = new Grid
+            //{
+            //    //RowDefinitions=
+            //    //{
+            //    //    new RowDefinition{Height=new GridLength(1,GridUnitType.Star)},
+            //    //    new RowDefinition{Height=new GridLength(1,GridUnitType.Auto)},
+            //    //    new RowDefinition{Height=new GridLength(1,GridUnitType.Star)}
+            //    //},
+            //    //ColumnDefinitions=
+            //    //{
+            //    //    new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)},
+            //    //    new ColumnDefinition{Width=new GridLength(1,GridUnitType.Auto)},
+            //    //    new ColumnDefinition{Width=new GridLength(1,GridUnitType.Star)}
+            //    //},
+            //    Children =
+            //    {
+            //        SetPosition(,0,0)
+            //    }
+            //};
             this.KeyDown += MainWindow_KeyDown;
             this.KeyUp += MainWindow_KeyUp;
             {
-                double ratio = 1.5, r = 1;
-                var endPoints = new List<double>();
-                endPoints.Add(0);
-                endPoints.Add(Math.PI / (2 + ratio));
-                endPoints.Add(Math.PI * (1 + ratio) / (2 + ratio));
-                endPoints = endPoints.Concat(endPoints.Select(a => a + Math.PI)).ToList();
-                model = My3DGraphics.CreateHex(endPoints, r, r / 2);
+                mainViewPort.Children.Add(new ModelVisual3D { Content = new AmbientLight(Colors.DarkGray) });
+                //this.mainViewPort.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.Black, new Vector3D(-1, -4, -1.2)*-1) });
+                mainViewPort.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.White, new Vector3D(-0.9, -5, -1)) });//Antique, Floral
+                //this.mainViewPort.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.White, new Vector3D(0,-1,0)) });
+                //this.mainViewPort.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.White, new Vector3D(-1,0,0)) });
+                Kernel.Camera = new PerspectiveCamera();
+                Kernel.Camera.FarPlaneDistance = 500;
+                Kernel.Camera.NearPlaneDistance = 1;
+                mainViewPort.Camera = Kernel.Camera;
+                Kernel.CameraProperties.BaseTransform= Kernel.Camera.Transform;
+            }
+            {
+                //double ratio = 1.5, r = 1;
+                //var endPoints = new List<double>();
+                //endPoints.Add(0);
+                //endPoints.Add(Math.PI / (2 + ratio));
+                //endPoints.Add(Math.PI * (1 + ratio) / (2 + ratio));
+                //endPoints = endPoints.Concat(endPoints.Select(a => a + Math.PI)).ToList();
+                //model = My3DGraphics.CreateHex(endPoints, r, r / 2);
                 model = new Models.Pod().Model;
-                this.mainViewPort.Children.Add(new ModelVisual3D { Content = model });
+                mainViewPort.Children.Add(new ModelVisual3D { Content = model });
                 //this.mainViewPort.Children.Add(new ModelVisual3D { Content = new Models.Pod().Model });
             }
             {
-                this.mainViewPort.Children.Add(new ModelVisual3D { Content = new AmbientLight(Colors.DarkGray) });
-                this.mainViewPort.Children.Add(new ModelVisual3D { Content = new DirectionalLight(Colors.White, new Vector3D(-1, -2, -5)) });
-                Kernel.Camera = new PerspectiveCamera();
-                Kernel.Camera.FarPlaneDistance = 100;
-                Kernel.Camera.NearPlaneDistance = 1;
-                this.mainViewPort.Camera = Kernel.Camera;
-                Kernel.CameraProperties.BaseTransform= Kernel.Camera.Transform;
+                model = new Models.Blocks().Model;
+                mainViewPort.Children.Add(new ModelVisual3D { Content = model });
             }
         }
         void ShowKeyStates()
@@ -151,8 +187,6 @@ namespace Digging_Game_3
         async void LaunchOldForm()
         {
             await Task.Delay(100000);
-            鑽礦遊戲2.MyForm f = new 鑽礦遊戲2.MyForm();
-            f.Show();
         }
     }
 }

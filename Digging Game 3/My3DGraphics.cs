@@ -99,6 +99,44 @@ namespace Digging_Game_3
                 catch (Exception error) { MessageBox.Show(error.ToString()); throw; }
             }
         }
+        public static class Cuboid//長方體
+        {
+            public enum Face {Xp,Yp,Zp,Xn,Yn,Zn }
+            static Dictionary<Face, Vector3D> Normals = new Dictionary<Face, Vector3D>
+            {
+                {Face.Xn,new Vector3D(-1,0,0) },
+                {Face.Yn,new Vector3D(0,-1,0) },
+                {Face.Zn,new Vector3D(0,0,-1) },
+                {Face.Xp,new Vector3D(1,0,0) },
+                {Face.Yp,new Vector3D(0,1,0) },
+                {Face.Zp,new Vector3D(0,0,1) }
+            };
+            static Dictionary<Face, Point3D[]> Vertexes = new Dictionary<Face, Point3D[]>
+            {
+                {Face.Xn,new[]{ new Point3D(-1, -1, -1), new Point3D(-1, -1, 1), new Point3D(-1, 1, 1), new Point3D(-1, 1, -1) } },
+                {Face.Yn,new[]{ new Point3D(-1, -1, -1), new Point3D(1, -1, -1), new Point3D(1, -1, 1), new Point3D(-1, -1, 1) } },
+                {Face.Zn,new[]{ new Point3D(-1, -1, -1), new Point3D(-1, 1, -1), new Point3D(1, 1, -1), new Point3D(1, -1, -1) } },
+                {Face.Xp,new[]{ new Point3D(1, -1, -1), new Point3D(1, 1, -1), new Point3D(1, 1, 1), new Point3D(1, -1, 1) } },
+                {Face.Yp,new[]{ new Point3D(-1, 1, -1), new Point3D(-1, 1, 1), new Point3D(1, 1, 1), new Point3D(1, 1, -1) } },
+                {Face.Zp,new[]{ new Point3D(-1, -1, 1), new Point3D(1, -1, 1), new Point3D(1, 1, 1), new Point3D(-1, 1, 1) } }
+            };
+            public static void AddFaces(Point3D exampleVertex, out List<Point3D>vertices,out List<int>triangleIndices,out List<Vector3D> normals,params Face[]faces)
+            {
+                if (faces == null || faces.Length == 0) faces = new[] { Face.Xn, Face.Xp, Face.Yn, Face.Yp, Face.Zn, Face.Zp };
+                vertices = new List<Point3D>();
+                triangleIndices = new List<int>();
+                normals = new List<Vector3D>();
+                foreach(var face in faces)
+                {
+                    int n = vertices.Count;
+                    vertices.AddRange(Vertexes[face].Select(p => new Point3D(p.X * Math.Abs(exampleVertex.X), p.Y * Math.Abs(exampleVertex.Y), p.Z * Math.Abs(exampleVertex.Z))));
+                    for (int i = 0; i < 4; i++) normals.Add(Normals[face]);
+                    triangleIndices.AddRange(new[] { 0, 1, 2, 0, 2, 3 }.Select(v => n + v));
+                }
+                Trace.Assert(normals.Count == vertices.Count);
+                //normals.Clear();
+            }
+        }
         public static MeshGeometry3D NewModel() { return new MeshGeometry3D(); }
         public static MeshGeometry3D AddTriangles(this MeshGeometry3D mesh,IEnumerable<Point3D>positions,IEnumerable<int> triangleIndices,IEnumerable<Vector3D>normals=null,IEnumerable<System.Windows.Point>textureCoordinates=null)
         {

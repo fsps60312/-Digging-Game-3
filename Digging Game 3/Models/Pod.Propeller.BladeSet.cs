@@ -60,7 +60,7 @@ namespace Digging_Game_3.Models
                 {
                     Kernel.Heart.Beat += (secs) =>
                     {
-                        MyLib.Set(SubTransforms, TransformIndexTheta, false).RotatePrepend(new Vector3D(0, 0, 1), (Reversed ? -1 : 1) * (secs * SpeedRatio * Math.PI * Parent.omega)).Done();
+                        MyLib.Set(SubTransforms, TransformIndexTheta, false).RotatePrepend(new Vector3D(0, 0, 1), (Reversed ? -1 : 1) * (secs * SpeedRatio * 5 * Parent.omega)).Done();
                         UpdateTransform();
                     };
                 }

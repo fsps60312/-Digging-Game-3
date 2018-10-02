@@ -1,5 +1,6 @@
 ﻿using System.Windows.Media.Media3D;
 using System.Windows.Media;
+using System.Collections.Generic;
 
 namespace Digging_Game_3.Models
 {
@@ -18,17 +19,9 @@ namespace Digging_Game_3.Models
                 ///
                 ///2 3
                 ///0 1
-                return My3DGraphics.NewModel().AddTriangles(
-                    new[] { new Point3D(-r,-r,-r),new Point3D(r,-r,-r),new Point3D(-r,r,-r),new Point3D(r,r,-r),new Point3D(-r,-r,r),new Point3D(r,-r,r),new Point3D(-r,r,r),new Point3D(r,r,r) },
-                    new[]
-                    {
-                        0,2,3,0,3,1,
-                        4,5,7,4,7,6,
-                        0,1,5,0,5,4,
-                        2,6,7,2,7,3,
-                        0,4,6,0,6,2,
-                        1,3,7,1,7,5
-                    }).CreateModel(new SolidColorBrush(Colors.PeachPuff));
+                //var vertices = new List<Point3D>{, new Point3D(r, -r, -r), new Point3D(-r, r, -r), new Point3D(r, r, -r), new Point3D(-r, -r, r), new Point3D(r, -r, r), new Point3D(-r, r, r), new Point3D(r, r, r) };
+                My3DGraphics.Cuboid.AddFaces(new Point3D(r, r, r),out List<Point3D>vertices, out List<int> triangleIndices, out List<Vector3D> normals);
+                return My3DGraphics.NewModel().AddTriangles(vertices,triangleIndices,normals).CreateModel(new SolidColorBrush(Colors.PeachPuff));
             }
         }
     }

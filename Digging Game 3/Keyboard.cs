@@ -10,6 +10,6 @@ namespace Digging_Game_3
     public static class Keyboard
     {
         public static HashSet<Key> keyPressed = new HashSet<Key>();
-        public static bool IsDown(Key key){ lock (keyPressed) return keyPressed.Contains(key); }
+        public static bool IsDown(params Key[] keys){ lock (keyPressed) return keys.Any(k => keyPressed.Contains(k)); }
     }
 }

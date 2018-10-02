@@ -11,14 +11,14 @@ namespace Digging_Game_3.Models
     {
         partial class Propeller : My3DObject
         {
-            public double omega = 5;
+            public double omega = 0;
             public class PropertyDescription
             {
                 public double friction=1;
+                public Func<double, double> air_friction = o => 0.5 * o * o + 0.01 * Math.Abs(o);
                 public double momentOfInertia=1;
-                public double maxPower=10;//最大功率
-                public double minPower=2;//負旋最大功率
-                public double maxTorque=10;//最大扭力
+                public double maxPower=50;//最大功率
+                public double maxTorque=20;//最大扭力
                 public double foldingTime=0.5;//用時
             }
             public PropertyDescription Properties = new PropertyDescription();
@@ -85,30 +85,46 @@ namespace Digging_Game_3.Models
                 }
             }
             public Func<bool> IsOnGround = new Func<bool>(() => false);
+            public Func<double> DownwardWindSpeed = new Func<double>(() => 0);
+            public double LiftForce()
+            {
+                return (omega - DownwardWindSpeed() * 0.05) * (1 - Folding) * 5;
+            }
             public Propeller(Types propellerType) : base(propellerType)
             {
                 bool foldingTarget = false;
                 Kernel.Heart.Beat += (secs) =>
                 {
-                    double torque = omega > 0 ? -Properties.friction : Properties.friction;
-                    if (Keyboard.IsDown(Key.W))
-                    {
-                        torque += Math.Min(Properties.maxTorque, omega > 0 ? Properties.maxPower / omega : double.MaxValue);
-                        foldingTarget = false;
-                    }
+
+                    double torque = 0, frictionTorque = 0;
+                    //keyboard control
                     if (Keyboard.IsDown(Key.S))
                     {
-                        torque -= Math.Min(Properties.maxTorque, omega < 0 ? Properties.minPower / (-omega) : double.MaxValue);
-                        foldingTarget = true;
+                        frictionTorque += (omega > 0 ? -1 : 1) * Math.Min(Properties.maxTorque, omega != 0 ? Properties.maxPower / Math.Abs(omega) : double.MaxValue);
                     }
-                    if(foldingTarget) Folding = Math.Min(1, Folding + secs / Properties.foldingTime);
-                    else Folding = Math.Max(0, Folding - secs / Properties.foldingTime);
-                    omega += secs * torque;
-                    if(!Keyboard.IsDown(Key.W)&&!Keyboard.IsDown(Key.S))
+                    else if (Keyboard.IsDown(Key.W))
                     {
-                        foldingTarget = IsOnGround();
-                        if ((torque > 0) == (omega > 0)) omega = 0;//摩擦力讓速度歸零
+                        torque += Math.Min(Properties.maxTorque, omega > 0 ? Properties.maxPower / omega : double.MaxValue);
                     }
+                    if (Keyboard.IsDown(Key.W)) foldingTarget = false;
+                    else if(Keyboard.IsDown(Key.S)&& Math.Abs(omega) <= Math.PI / 10) foldingTarget = true;
+                    else if (!Keyboard.IsDown(Key.W) && !Keyboard.IsDown(Key.S)) foldingTarget = IsOnGround();
+
+                    torque -= LiftForce() / 5 * 2;//風導致轉動
+                    //friction
+                    frictionTorque += (omega > 0 ? -1 : 1) * (Properties.friction + Properties.air_friction(omega));
+                    if ((torque > 0) != (torque + frictionTorque > 0))
+                    {
+                        if (omega > 0) frictionTorque = Math.Max(frictionTorque, -torque - omega / secs);
+                        else frictionTorque = Math.Min(frictionTorque, -torque - omega / secs);
+                    }
+                    torque += frictionTorque;
+                    // # omega
+                    omega += secs * torque;
+
+                    //folding
+                    if (foldingTarget) Folding = Math.Min(1, Folding + secs / Properties.foldingTime);
+                    else Folding = Math.Max(0, Folding - secs / Properties.foldingTime);
                 };
             }
             private double Height, MaxHeight;

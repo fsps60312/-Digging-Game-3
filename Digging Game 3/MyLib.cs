@@ -25,6 +25,19 @@ namespace Digging_Game_3
     public static class MyExtensions
     {
         public static Point3D Multiply(this Point3D a, double scale) { return new Point3D(a.X * scale, a.Y * scale, a.Z * scale); }
+        public static IEnumerable<T> SelectAdd<T>(this IEnumerable<T> source, params Func<T, T>[] selectors){ return source.Concat(source.SelectConcat(selectors)); }
+        public static IEnumerable<T> SelectConcat<T>(this IEnumerable<T> source, params Func<T, T>[] selectors) { return selectors.SelectMany(f => source.Select(f)); }
+        //public static List<int>FindAllIndex<T>(this List<T>source,Func<T,bool>predict)
+        //{
+        //    List<int> ans = new List<int>();
+        //    for(int i=-1; ;)
+        //    {
+        //        i = source.FindIndex(i+1,v => predict(v));
+        //        if (i == -1) break;
+        //        ans.Add(i);
+        //    }
+        //    return ans;
+        //}
     }
     public static class MyLib
     {
@@ -114,7 +127,7 @@ namespace Digging_Game_3
         }
         public static void AssertTypes(object[]vs,params Type[]types)
         {
-            Trace.Assert(vs.All((i, v) => v.GetType() == types[i]),null, DebugInfo(vs, types));
+            Trace.Assert(vs.All((i, v) =>v.GetType()==types[i]|| v.GetType().IsSubclassOf(types[i])),null, DebugInfo(vs, types));
         }
         public static string DebugInfo(object a,params object[] b)
         {
