@@ -120,6 +120,25 @@ namespace Digging_Game_3
                 {Face.Yp,new[]{ new Point3D(-1, 1, -1), new Point3D(-1, 1, 1), new Point3D(1, 1, 1), new Point3D(1, 1, -1) } },
                 {Face.Zp,new[]{ new Point3D(-1, -1, 1), new Point3D(1, -1, 1), new Point3D(1, 1, 1), new Point3D(-1, 1, 1) } }
             };
+            public static void AddFaces(Point3D exampleVertex, out List<Point3D> vertices, out List<int> triangleIndices, out List<Vector3D> normals, string faceSetString)//x, +x, -x, y, +y, -y, z, +z, -z
+            {
+                HashSet<Face> faces = new HashSet<Face>();
+                string t;
+                t = faceSetString.Replace("-x", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Xn); faceSetString = t;
+                t = faceSetString.Replace("+x", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Xp); faceSetString = t;
+                t = faceSetString.Replace("-y", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Yn); faceSetString = t;
+                t = faceSetString.Replace("+y", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Yp); faceSetString = t;
+                t = faceSetString.Replace("-z", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Zn); faceSetString = t;
+                t = faceSetString.Replace("+z", ""); if (t.Length < faceSetString.Length) faces.Add(Face.Zp); faceSetString = t;
+                t = faceSetString.Replace("x", ""); if (t.Length < faceSetString.Length) { faces.Add(Face.Xn); faces.Add(Face.Xp); }
+                faceSetString = t;
+                t = faceSetString.Replace("y", ""); if (t.Length < faceSetString.Length) { faces.Add(Face.Yn); faces.Add(Face.Yp); }
+                faceSetString = t;
+                t = faceSetString.Replace("z", ""); if (t.Length < faceSetString.Length) { faces.Add(Face.Zn); faces.Add(Face.Zp); }
+                faceSetString = t;
+                Trace.Assert(faceSetString == "");
+                AddFaces(exampleVertex, out vertices, out triangleIndices, out normals, faces.ToArray());
+            }
             public static void AddFaces(Point3D exampleVertex, out List<Point3D>vertices,out List<int>triangleIndices,out List<Vector3D> normals,params Face[]faces)
             {
                 if (faces == null || faces.Length == 0) faces = new[] { Face.Xn, Face.Xp, Face.Yn, Face.Yp, Face.Zn, Face.Zp };

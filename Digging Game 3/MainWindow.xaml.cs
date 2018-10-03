@@ -30,6 +30,8 @@ namespace Digging_Game_3
             //MessageBox.Show((RenderCapability.Tier>>16).ToString());
             RenderOptions.SetEdgeMode(mainViewPort, EdgeMode.Aliased);
             //mainViewPort.Effect = new System.Windows.Media.Effects.BlurEffect { /*Radius = 5*/ };
+            await Task.Delay(1000);
+            lastUpdateTime = DateTime.Now;
             CompositionTarget.Rendering += CompositionTarget_Rendering;
         }
         DateTime lastUpdateTime = DateTime.Now,statisticTime=DateTime.Now;
@@ -180,8 +182,8 @@ namespace Digging_Game_3
         {
             InitializeComponent();
             InitializeViews();
-            StartAnimation();
             MonitorKeys();
+            StartAnimation();
             //LaunchOldForm();
         }
         async void LaunchOldForm()

@@ -8,12 +8,15 @@ namespace Digging_Game_3.Models
     {
         class Body : My3DObject
         {
+            const double r = 1.5;
+            public List<Vector3D> CollidePoints { get; private set; } = new List<Vector3D>
+            {new Vector3D(-r,-r,0),new Vector3D(-r,r,0),new Vector3D(r,-r,0),new Vector3D(r,r,0) };
             public Body():base()
             {
             }
             protected override Model3D CreateModel(params object[] vs)
             {
-                double r = 1.5;
+                //double r = 1.5;
                 ///6 7
                 ///4 5
                 ///

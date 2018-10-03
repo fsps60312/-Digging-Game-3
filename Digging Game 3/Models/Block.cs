@@ -51,20 +51,20 @@ namespace Digging_Game_3.Models
         }
         Block NewBlock(int xi,int yi)
         {
-            var type = ((xi + yi) % 2 + 2) % 2;
-            //if (type != 0) return null;
+            //if (yi > 0) return null;
+            if (!Pod.IsCollidable(xi, yi)) return null;
             var anchor = Anchor + new Vector3D(Width * xi, Height * yi, 0);
-            if (blockRecycle[type].Count > 0)
+            if (blockRecycle[0].Count > 0)
             {
-                var b = blockRecycle[type].First();
-                blockRecycle[type].Remove(b);
+                var b = blockRecycle[0].First();
+                blockRecycle[0].Remove(b);
                 b.Reset(anchor);
                 (Model as Model3DGroup).Children.Add(b.Model);
                 return b;
             }
             else
             {
-                Block b = new Block(anchor, new Size3D(Width, Height, Depth), new SolidColorBrush(Color.FromArgb(128, (byte)MyLib.Rand.Next(128-20,128+20), (byte)MyLib.Rand.Next(72-10,72+10), 0)));// type == 0 ? new SolidColorBrush(Color.FromArgb(128, 128, 72, 0)) : new SolidColorBrush(Color.FromArgb(128, 128 / 4 * 3, 72 / 4 * 3, 0)));
+                Block b = new Block(anchor, new Size3D(Width, Height, Depth), new SolidColorBrush(Color.FromArgb(128, (byte)MyLib.Rand.Next(128-20,128+20), (byte)MyLib.Rand.Next(72-10,72+10), 0)));
                 (Model as Model3DGroup).Children.Add(b.Model);
                 return b;
             }
@@ -156,12 +156,14 @@ namespace Digging_Game_3.Models
             var anchor = Anchor = (Vector3D)vs[0];
             var size = (Size3D)vs[1];
             var brush = (Brush)vs[2];
-            My3DGraphics.Cuboid.AddFaces(new Point3D(size.X / 2, size.Y / 2, size.Z / 2), out List<Point3D> vertices, out List<int> triangleIndices, out List<Vector3D> normals,
-                My3DGraphics.Cuboid.Face.Xn, My3DGraphics.Cuboid.Face.Xp, My3DGraphics.Cuboid.Face.Yn, My3DGraphics.Cuboid.Face.Yp, My3DGraphics.Cuboid.Face.Zn);
+            My3DGraphics.Cuboid.AddFaces(new Point3D(size.X / 2, size.Y / 2, size.Z / 2), out List<Point3D> vertices, out List<int> triangleIndices, out List<Vector3D> normals, "xy-z");
             vertices = vertices.Select(p => p + new Vector3D(size.X, size.Y, size.Z) / 2 + anchor).ToList();
-            System.Diagnostics.Trace.Assert(vertices.Count == 4 * 5 && normals.Count == 4 * 5);
-            for (int i = 4 * 4, j = 5 * 4 - 1; i < j; i++, j--) { var t = vertices[i]; vertices[i] = vertices[j]; vertices[j] = t; }
-            for (int i = 4 * 4; i < 5 * 4; i++) normals[i] = -normals[i];
+            System.Diagnostics.Trace.Assert(vertices.Count == 5 * 4 && triangleIndices.Count == 5 * 6 && normals.Count == 5 * 4);
+            for (int k = 0; k <= 0; k++)
+            {
+                for (int i = k * 6, j = (k + 1) * 6 - 1; i < j; i++, j--) { var t = triangleIndices[i]; triangleIndices[i] = triangleIndices[j]; triangleIndices[j] = t; }
+                for (int i = k * 4; i < (k + 1) * 4; i++) normals[i] *= -1;
+            }
             return My3DGraphics.NewModel().AddTriangles(vertices, triangleIndices, normals).CreateModel(brush);
         }
         public void Reset(Vector3D anchor)
