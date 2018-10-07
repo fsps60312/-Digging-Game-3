@@ -63,6 +63,7 @@ namespace Digging_Game_3
                 var f = alpha;
                 omega += f / momentOfInertia * secs;
                 theta += (preV + omega) / 2 * secs;
+                theta %= 2.0 * Math.PI;
             }
             if (accepted == null || accepted(this)) return true;
             Restore();

@@ -51,6 +51,8 @@ namespace Digging_Game_3
             public MyTrans Rotate(Vector3D axis, double angleRad) { v.Rotate(new Quaternion(axis, angleRad / Math.PI * 180)); return this; }
             public MyTrans TranslatePrepend(Vector3D a) { v.TranslatePrepend(a); return this; }
             public MyTrans Translate(Vector3D a) { v.Translate(a); return this; }
+            public MyTrans ScalePrepend(Vector3D scale) { v.ScalePrepend(scale); return this; }
+            public MyTrans Scale(Vector3D scale) { v.Scale(scale); return this; }
             public MatrixTransform3D Value { get { return new MatrixTransform3D(v); } }
             public MyTrans Copy() { return new MyTrans(v); }
         }

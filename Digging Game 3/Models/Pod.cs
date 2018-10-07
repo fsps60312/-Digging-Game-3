@@ -39,20 +39,22 @@ namespace Digging_Game_3.Models
         double DesiredRotationY = 0;
         void MaintainRotationZ(double secs)
         {
-            RB.alpha = 0;
+            var t = -10 * RB.theta - RB.omega;
+            RB.alpha = Math.Pow(Math.Abs(t),1)* t;
             if (Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
             {
                 if (Keyboard.IsDown(System.Windows.Input.Key.A))
                 {
-                    RB.alpha += 2;
+                    RB.alpha += 5;
                 }
                 if (Keyboard.IsDown(System.Windows.Input.Key.D))
                 {
-                    RB.alpha -= 2;
+                    RB.alpha -= 5;
                 }
-                if (Keyboard.IsDown(System.Windows.Input.Key.K)) RB.omega += RB.alpha * 0.2;
+                //if (Keyboard.IsDown(System.Windows.Input.Key.K)) RB.omega += RB.alpha * 0.1;
             }
             //else RB.alpha = -1 * (RB.theta - 1 * RB.omega);
+            RB.alpha += -1 * Math.Abs(RB.omega) * RB.omega - 1 * RB.omega;
             MyLib.Set(SubTransforms, TransformIndexRotateAroundZ, true).RotatePrepend(new Vector3D(0, 0, 1), RB.theta).Done();
         }
         void MaintainRotationY(double secs)
@@ -66,6 +68,7 @@ namespace Digging_Game_3.Models
             MyLib.SmoothTo(ref RotationY, DesiredRotationY, secs, Math.Max(Math.Abs(DesiredRotationY - RotationY) / Math.PI, 0.2) * 0.2);
             MyLib.Set(SubTransforms, TransformIndexRotateAroundY, true).RotatePrepend(new Vector3D(0, -1, 0), RotationY).Done();
         }
+        bool _IsCollideDown = false;
         void MaintainRigitBody(double secs)
         {
             RB.force = new Vector3D(0, -RB.mass * Constants.Gravity, 0);
@@ -76,7 +79,7 @@ namespace Digging_Game_3.Models
                 if (dif > 0.5) return false;
                 int cur_x, cur_y, x = 0, y = 0;
                 IsCollidable(rb.position, out cur_x, out cur_y);
-                if (secs < 1e-5 && dif < 0.01)//accurate enough
+                if (secs < 1e-4)//accurate enough
                 {
                     for (int cpi = -1; ;)
                     {
@@ -104,6 +107,7 @@ namespace Digging_Game_3.Models
                         t = cp.Y * -Math.Sin(rb.theta) + cp.X * Math.Cos(rb.theta);
                         if (y == cur_y - 1 && !IsCollidable(x, cur_y) && rb.velocity.Y + t * rb.omega < 0)//collide down, +y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y+f/m) + (omega+f*t/I)*t = -b*(v.y + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.y+omega*t)
                         {
+                            _IsCollideDown = true;
                             var f = (-bounce - 1) * (rb.velocity.Y + rb.omega * t) / (1.0 / rb.mass + t * t / rb.momentOfInertia);
                             //f -= rb.force.Y * secs;
                             rb.velocity.Y += f / rb.mass;
@@ -133,16 +137,23 @@ namespace Digging_Game_3.Models
             y = (int)Math.Floor((p.Y - Blocks.Anchor.Y) / Blocks.Height);
             return IsCollidable(x, y);
         }
-        public static bool IsCollidable(int x,int y) { return y <= -1 || y >= 9 || x <= -5 || x >= 5; }
+        public static bool IsCollidable(int x,int y) { return y <= -1 || y >= 9 || x <= -5 || x >= 5||(x>=-1&&x<=1&&y==2); }
         RigidBody RB = new RigidBody();
         public Pod():base()
         {
+            int isOnGround = 0;
+            propeller.IsOnGround = () => isOnGround > 0 && Math.Abs(RB.velocity.Y) < 0.01;
             Kernel.Heart.Beat += (secs) =>
             {
                 MaintainRotationY(secs);
                 MaintainRotationZ(secs);
                 //drill.Folding = System.Math.Abs(System.DateTime.Now.Ticks % 100000000 - 50000000) / 50000000.0;
+                _IsCollideDown = false;
                 MaintainRigitBody(secs);
+                {
+                    if (isOnGround > 0) isOnGround--;
+                    if (_IsCollideDown) isOnGround = 5;
+                }
                 OriginTransform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
                 const double lookOffset = 1.3;
                 MyLib.SmoothTo(ref Kernel.CameraProperties.position, RB.position + new Vector3D(0, 0, 30 / Math.Pow(0.4+SetZ(RB.position-Kernel.CameraProperties.position,0).Length*0.1,0.5)), secs, 0.2);
@@ -155,6 +166,15 @@ namespace Digging_Game_3.Models
                 MyLib.SmoothTo(ref Kernel.CameraProperties.lookDirection, target, secs, 0.2);
                 UpdateTransform();
                 //this.Folding = 1;
+                //for(int i=0;i<1;i++)
+                {
+                    var color = (byte)MyLib.Rand.Next(200, 210);
+                    var position = RB.position + new Vector3D(-Math.Cos(RotationY) * 1, 1, MyLib.Rand.NextDouble() / 2 + 0.5);
+                    var speed = new Vector3D(2 * -Math.Cos(RotationY)+MyLib.Rand.NextDouble()-0.5, 5 + MyLib.Rand.NextDouble() - 0.5, 0);
+                    Fumes.Instance.AddFums(position, speed
+                        , Color.FromArgb(50, color, color, color)
+                        , 0.1, 2, 2, speed.Length*1.5);
+                }
             };
         }
         Vector3D RestrictX(Vector3D v, double minX, double maxX) { if (v.X < minX) v.X = minX; if (v.X > maxX) v.X = maxX; return v; }

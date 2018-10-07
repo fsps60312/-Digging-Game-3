@@ -113,6 +113,17 @@ namespace Digging_Game_3
                 model = new Models.Blocks().Model;
                 mainViewPort.Children.Add(new ModelVisual3D { Content = model });
             }
+            {
+                model = (Models.Fumes.Instance = new Models.Fumes()).Model;
+                mainViewPort.Children.Add(new ModelVisual3D { Content = model });
+            }
+            //{
+            //    double s = -100, l = 100,z=10;
+            //    model = My3DGraphics.NewModel().AddTriangles(
+            //        new[] { new Point3D(s,s, z), new Point3D(l,s, z), new Point3D(l,l, z), new Point3D(s,l, z) },
+            //        new[] { 0, 1,2,0,2,3 }).CreateModel(new SolidColorBrush(Colors.White) { Opacity=0.5});
+            //    mainViewPort.Children.Add(new ModelVisual3D { Content = model });
+            //}
         }
         void ShowKeyStates()
         {
