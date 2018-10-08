@@ -48,6 +48,12 @@ namespace Digging_Game_3
             omega = _omega;
             alpha = _alpha;
         }
+        public Vector3D GetVelocityAt(Point3D relativePosition)
+        {
+            var mat = new Matrix3D();
+            mat.Rotate(new Quaternion(new Vector3D(0, 0, 1), theta / Math.PI * 180));
+            return velocity + Vector3D.CrossProduct(relativePosition * mat - new Point3D(), new Vector3D(0, 0, -1)) * omega;
+        }
         public bool Update(double secs,Func<RigidBody,bool>accepted=null)
         {
             BackUp();

@@ -131,6 +131,11 @@ namespace Digging_Game_3
         {
             Trace.Assert(vs.All((i, v) =>v.GetType()==types[i]|| v.GetType().IsSubclassOf(types[i])),null, DebugInfo(vs, types));
         }
+        public static Matrix3D Inverse(Matrix3D a)
+        {
+            a.Invert();
+            return a;
+        }
         public static string DebugInfo(object a,params object[] b)
         {
             return DebugInfo(a)+"\r\n--------------------\r\n" + DebugInfo(b);

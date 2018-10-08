@@ -37,57 +37,13 @@ namespace Digging_Game_3.Models
                 //double BodyRotationY = 0;
                 //double BodyRotationZ = 0;
                 //Point3D BodyPosition = new Point3D();
-                public bool UpdateRigitBody(double secs,double horizontalSqueezeRatio,Vector3D velocityChange, double theta, out Vector3D reactionForce,out double reactionTorque)
-                {
-                    //System.Diagnostics.Trace.WriteLine($"v change: {velocityChange * secs}");
-                    Vector3D rf = reactionForce = new Vector3D();
-                    double rt = reactionTorque = 0;
-                    var getVelocityChange = new Func<Point3D, Vector3D>(p =>
-                       {
-                           var mat = new Matrix3D();
-                           mat.Rotate(new Quaternion(new Vector3D(0, 0, 1), -theta));
-                           var ans = -velocityChange;
-                           //ans *= secs;
-                           ans *= mat;
-                           ans.X *= horizontalSqueezeRatio;
-                           return ans;
-                       });
-                    var reportReaction = new Action<Func<Point3D>,Func<Vector3D>>((getP,getF) =>
-                    {
-                        var p = getP();
-                        var f = getF();
-                        p.X *= horizontalSqueezeRatio;
-                        f.X *= horizontalSqueezeRatio;
-                        rf += f;
-                        ///minimize: (p.x+a*f.x)^2+(p.y+a*f.y)^2
-                        ///2(p.x+a*f.x)*f.x+2(p.y+a*f.y)*f.y=0
-                        ///p.x*f.x+p.y*f.y+a(f.x*f.x+f.y*f.y)=0
-                        ///a=-(p.x*f.x+p.y*f.y)/(f.x*f.x+f.y*f.y)
-                        double a = -(p.X * f.X + p.Y * f.Y) / (f.X * f.X + f.Y * f.Y);
-                        var forceArm = p + a * f - new Point3D();
-                        rt += Vector3D.CrossProduct(forceArm, f).Z;
-                    });
-                    if (UpdateRigitBody(secs,getVelocityChange, reportReaction, 0))
-                    {
-                        reactionForce = rf;
-                        reactionTorque = rt;
-                        return true;
-                    }
-                    else return false;
-                }
-                delegate void MyAction(out Vector3D reactionForce, out double reactionTorque);
-                bool UpdateRigitBody(double secs,Func<Point3D,Vector3D>getVelocityChange, Action<Func<Point3D>,Func<Vector3D>> reportReactionForce, int i)
-                {
-                    if (i == gears.Count) return true;
-                    var g = gears[i];
-                    var needRestore = new Func<bool>(() => !UpdateRigitBody(secs,getVelocityChange, reportReactionForce, i + 1));
-                    return g.UpdateRigitBody(secs, needRestore, getVelocityChange(g.DesiredPosition), getF => reportReactionForce(() => g.DesiredPosition, getF));
-                }
-                public Track(Pod parent,Vector3D offset):base(parent,offset)
+                Body Parent;
+                public bool IsOnGround { get { return groundGears.All(g => g.IsOnGround); } }
+                public Track(Body parent,Vector3D offset):base(parent,offset)
                 {
                     {
                         double r = 0;
-                        Kernel.Heart.Beat += secs =>
+                        parent.RigidBodyUpdating+= (secs,rb) =>
                           {
                               r -= secs * 0.1;
                               r = (r % 1 + 1) % 1;
@@ -98,13 +54,13 @@ namespace Digging_Game_3.Models
                           };
                     }
                 }
-                List<Gear> gears = new List<Gear>();
+                List<Gear> gears = new List<Gear>(), groundGears = new List<Gear>();
                 private Vector3D GetChainTouchPoint(Gear a, Gear b)
                 {
                     var angle = Math.PI / 2 - Math.Acos((a.Radius - b.Radius) / (a.Position - b.Position).Length);
                     var mat = Matrix3D.Identity;
-                    mat.Rotate(new Quaternion(new Vector3D(0, 0, 1), angle / Math.PI * 180));
-                    var ans = Vector3D.CrossProduct(b.Position - a.Position, new Vector3D(0, 0, 1)) * mat;
+                    mat.Rotate(new Quaternion(new Vector3D(0, 0, 1) * Parent.MatrixY, angle / Math.PI * 180));
+                    var ans = Vector3D.CrossProduct(b.Position - a.Position, new Vector3D(0, 0, 1) * Parent.MatrixY) * mat;
                     ans.Normalize();
                     return ans;
                 }
@@ -147,7 +103,7 @@ namespace Digging_Game_3.Models
                         {
                             var r = (target - ans) / l;
                             var mat = Matrix3D.Identity;
-                            mat.Rotate(new Quaternion(new Vector3D(0, 0, 1), angleDegrees * r));
+                            mat.Rotate(new Quaternion(new Vector3D(0, 0, 1)*Parent.MatrixY, angleDegrees * r));
                             return b.Position + t1 * mat * b.Radius;
                         }
                     }
@@ -156,30 +112,31 @@ namespace Digging_Game_3.Models
                 List<Tooth> Teeth = new List<Tooth>();
                 protected override Model3D CreateModel(params object[] vs)
                 {
-                    const double suspensionHardness = 10;
-                    MyLib.AssertTypes(vs,typeof(Pod),typeof(Vector3D));
-                    var parent = vs[0] as Pod;
+                    //const double suspensionHardness = 10;
+                    MyLib.AssertTypes(vs,typeof(Body),typeof(Vector3D));
+                    Parent = vs[0] as Body;
                     var offset = (Vector3D)vs[1];
                     //return TemporaryModel();
                     const double depth = 1, height = 1, lengthUp = 4, lengthDown = 2.5;
-                    List<Tuple<Point3D, double>> chain = new List<Tuple<Point3D, double>>
-                    {
-                        Tuple.Create( new Point3D(-lengthUp / 2, -height / 2+0.4, 0),0.4 ),
-                        Tuple.Create( new Point3D(-lengthUp/10, height / 2, 0),0.3 ),
-                        Tuple.Create( new Point3D(lengthUp / 2, height / 2, 0),0.2 ),
-                        Tuple.Create( new Point3D(lengthDown / 2, -height / 2+0.5, 0),0.5 ),
-                        Tuple.Create( new Point3D((lengthDown*3-lengthUp*1) / 4/2, -height / 2+0.2, 0),0.2 ),
-                        Tuple.Create( new Point3D((lengthDown*2-lengthUp*2) / 4/2, -height / 2+0.2, 0),0.2 ),
-                        Tuple.Create( new Point3D((lengthDown*1-lengthUp*3) / 4/2, -height / 2+0.2, 0),0.2 )
-                    }.Reverse<Tuple<Point3D, double>>().Select(p => new Tuple<Point3D, double>(p.Item1 + offset, p.Item2)).ToList();
+                    var chain = new List<Tuple<Point3D, double,double, double>>
+                    {                       //      relative position,                                  radius, mass,   suspension hardness
+                        Tuple.Create( new Point3D(-lengthUp / 2, -height / 2+0.4, 0),                   0.4,    0.02,   7.0 ),
+                        Tuple.Create( new Point3D((lengthDown*1-lengthUp*3) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   10.0 ),
+                        Tuple.Create( new Point3D((lengthDown*2-lengthUp*2) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   10.0 ),
+                        Tuple.Create( new Point3D((lengthDown*3-lengthUp*1) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   20.0 ),
+                        Tuple.Create( new Point3D(lengthDown / 2, -height / 2+0.5, 0),                  0.5,    0.045,  15.0 ),
+                        Tuple.Create( new Point3D(lengthUp / 2, height / 2, 0),                         0.2,    0.01,   10.0 ),
+                        Tuple.Create( new Point3D(-lengthUp/10, height / 2, 0),                         0.3,    0.01,   10.0),
+                    }.Select(p => new Tuple<Point3D, double,double, double>(p.Item1 + offset, p.Item2, p.Item3,p.Item4)).ToList();
                     Model3DGroup ans = new Model3DGroup();
                     foreach (var gv in chain)
                     {
                         var p = gv.Item1;
-                        var gear = new Gear(p, gv.Item2, suspensionHardness, (Point3D v, out int x, out int y) => Blocks.IsCollidable(parent.ToWorldPoint3D(v), out x, out y));
+                        var gear = new Gear(p, gv.Item2, gv.Item4,gv.Item3, Parent);
                         ans.Children.Add(gear.Model);
                         gears.Add(gear);
                     }
+                    foreach (var i in new[] { 0, 1, 2, 3, 4 }) groundGears.Add(gears[i]);
                     double chainLength = GetChainLength(gears);
                     int count =(int)( chainLength / 0.5);
                     for (int i = 0; i < count; i++)
@@ -208,22 +165,15 @@ namespace Digging_Game_3.Models
                     //List<int> tracksIndices = trackIndices.Concat(trackIndices.Select(v => trackPositions.Count + v)).ToList();
                 }
             }
-            public bool UpdateRigidBody(double secs,double horizontalSqueezeRatio,Vector3D velocityChange, double theta, out Vector3D reactionForce, out double reactionTorque)
+            public Tracks(Body parent,Vector3D offset) : base(parent,offset)
             {
-                reactionForce = new Vector3D();
-                reactionTorque = 0;
-                if (!leftTrack.UpdateRigitBody(secs, horizontalSqueezeRatio,velocityChange, theta, out Vector3D lrf, out double lrt)
-                    || !rigtTrack.UpdateRigitBody(secs, horizontalSqueezeRatio, velocityChange,theta, out Vector3D rrf, out double rrt)) return false;
-                reactionForce = lrf + rrf;
-                reactionTorque = lrt + rrt;
-                return true;
+                parent.IsOnGround = () => leftTrack.IsOnGround && rigtTrack.IsOnGround;
             }
-            public Tracks(Pod parent,Vector3D offset) : base(parent,offset) { }
             Track leftTrack, rigtTrack;
             protected override Model3D CreateModel(params object[] vs)
             {
-                MyLib.AssertTypes(vs, typeof(Pod),typeof(Vector3D));
-                var parent = vs[0] as Pod;
+                MyLib.AssertTypes(vs, typeof(Body),typeof(Vector3D));
+                var parent = vs[0] as Body;
                 var offset = (Vector3D)vs[1];
                 const double gap = 2.5 + 1;
                 leftTrack = new Track(parent,offset+new Vector3D(0,0, -gap / 2));

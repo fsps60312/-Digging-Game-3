@@ -95,7 +95,6 @@ namespace Digging_Game_3.Models
                 bool foldingTarget = false;
                 Kernel.Heart.Beat += (secs) =>
                 {
-
                     double torque = 0, frictionTorque = 0;
                     //keyboard control
                     if (Keyboard.IsDown(Key.S))
