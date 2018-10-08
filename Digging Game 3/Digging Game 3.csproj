@@ -69,6 +69,7 @@
     <Compile Include="Models\Pod.Propeller.BladeSet.cs" />
     <Compile Include="Models\Pod.Propeller.cs" />
     <Compile Include="Models\Pod.Tracks.cs" />
+    <Compile Include="Models\Pod.Tracks.Track.Gear.cs" />
     <Compile Include="My3DGraphics.cs" />
     <Compile Include="My3DObject.cs" />
     <Compile Include="MyLib.cs" />

@@ -8,7 +8,17 @@ using System.Windows.Media;
 
 namespace Digging_Game_3.Models
 {
-    class Blocks : My3DObject
+    partial class Blocks : My3DObject
+    {
+        public static bool IsCollidable(Point3D p, out int x, out int y)
+        {
+            x = (int)Math.Floor((p.X - Blocks.Anchor.X) / Blocks.Width);
+            y = (int)Math.Floor((p.Y - Blocks.Anchor.Y) / Blocks.Height);
+            return Blocks.IsCollidable(x, y);
+        }
+        public static bool IsCollidable(int x, int y) { return y <= -5 || y >= 9 || x <= -5 || x >= 5 || (x >= -1 && x <= 1 && y == 2); }
+    }
+    partial class Blocks : My3DObject
     {
         public const double Width = 5, Height = 4, Depth = 2.9;
         public static readonly Vector3D Anchor = new Vector3D(0, 0, -1.5);
@@ -23,7 +33,7 @@ namespace Digging_Game_3.Models
         }
         void RemoveXMin()
         {
-            foreach (var b in blocks.First.Value.Item2)RecycleBlock(b.Item2);
+            foreach (var b in blocks.First.Value.Item2) RecycleBlock(b.Item2);
             blocks.RemoveFirst();
         }
         void RemoveXMax()
@@ -49,10 +59,10 @@ namespace Digging_Game_3.Models
             }
             if (blocks.First.Value.Item2.Count == 0) blocks.Clear();
         }
-        Block NewBlock(int xi,int yi)
+        Block NewBlock(int xi, int yi)
         {
             //if (yi > 0) return null;
-            if (!Pod.IsCollidable(xi, yi)) return null;
+            if (!IsCollidable(xi, yi)) return null;
             var anchor = Anchor + new Vector3D(Width * xi, Height * yi, 0);
             if (blockRecycle[0].Count > 0)
             {
@@ -64,7 +74,7 @@ namespace Digging_Game_3.Models
             }
             else
             {
-                Block b = new Block(anchor, new Size3D(Width, Height, Depth), new SolidColorBrush(Color.FromArgb(128, (byte)MyLib.Rand.Next(128-20,128+20), (byte)MyLib.Rand.Next(72-10,72+10), 0)));
+                Block b = new Block(anchor, new Size3D(Width, Height, Depth), new SolidColorBrush(Color.FromArgb(128, (byte)MyLib.Rand.Next(128 - 20, 128 + 20), (byte)MyLib.Rand.Next(72 - 10, 72 + 10), 0)));
                 (Model as Model3DGroup).Children.Add(b.Model);
                 return b;
             }
@@ -97,7 +107,7 @@ namespace Digging_Game_3.Models
             var newList = blocks.Last.Value.Item2.Select(b => new Tuple<int, Block>(b.Item1, NewBlock(xI, b.Item1)));
             blocks.AddLast(new Tuple<int, LinkedList<Tuple<int, Block>>>(xI, new LinkedList<Tuple<int, Block>>(newList)));
         }
-        void RegoinOnXYPlane(out double xMin,out double xMax,out double yMin,out double yMax)
+        void RegoinOnXYPlane(out double xMin, out double xMax, out double yMin, out double yMax)
         {
             var a = Kernel.Camera.FieldOfView / 180 * Math.PI / 2;
             Point3D o = new Point3D();
@@ -128,8 +138,8 @@ namespace Digging_Game_3.Models
                 //System.Diagnostics.Trace.WriteLine($"{xMind}, {xMaxd}, {yMind}, {yMaxd}");
                 //int xMin = xI - 10, xMax = xI + 10, yMin = yI - 10, yMax = yI + 10;
                 int
-                xMin = (int)Math.Floor((xMind - Anchor.X) / Width)-1, xMax = (int)Math.Ceiling((xMaxd - Anchor.X) / Width)+1,
-                yMin = (int)Math.Floor((yMind - Anchor.Y) / Height)-1, yMax = (int)Math.Ceiling((yMaxd - Anchor.Y) / Height)+1;
+                xMin = (int)Math.Floor((xMind - Anchor.X) / Width) - 1, xMax = (int)Math.Ceiling((xMaxd - Anchor.X) / Width) + 1,
+                yMin = (int)Math.Floor((yMind - Anchor.Y) / Height) - 1, yMax = (int)Math.Ceiling((yMaxd - Anchor.Y) / Height) + 1;
                 while (blocks.Count > 0 && blocks.First.Value.Item1 < xMin) RemoveXMin();
                 while (blocks.Count > 0 && blocks.Last.Value.Item1 > xMax) RemoveXMax();
                 while (blocks.Count > 0 && blocks.First.Value.Item2.First.Value.Item1 < yMin) RemoveYMin();

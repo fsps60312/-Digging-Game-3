@@ -22,8 +22,7 @@ namespace Digging_Game_3.Models
             body = new Body();
             drill = new Drill(1.5, 50);
             drill.Transform = drill.OriginTransform = MyLib.Transform(drill).TranslatePrepend(new Vector3D(1.5, 0, 0)).RotatePrepend(new Vector3D(0, 1, 0), MyLib.ToRad(90)).Value;
-            tracks = new Tracks();
-            tracks.Transform = tracks.OriginTransform = MyLib.Transform(tracks).TranslatePrepend(new Vector3D(0, -1.5, 0)).Value;
+            tracks = new Tracks(this, new Vector3D(0, -1.5, 0));
             var ans = new Model3DGroup();
             ans.Children.Add(propeller.Model);
             ans.Children.Add(body.Model);
@@ -78,18 +77,26 @@ namespace Digging_Game_3.Models
                 var dif = (rb.position - rb._position).Length;
                 if (dif > 0.5) return false;
                 int cur_x, cur_y, x = 0, y = 0;
-                IsCollidable(rb.position, out cur_x, out cur_y);
+                Blocks.IsCollidable(rb.position, out cur_x, out cur_y);
                 if (secs < 1e-4)//accurate enough
                 {
                     for (int cpi = -1; ;)
                     {
-                        cpi = body.CollidePoints.FindIndex(cpi + 1, p => IsCollidable(rb.position + new Vector3D(Math.Cos(rb.theta) * p.X - Math.Sin(rb.theta) * p.Y, Math.Cos(rb.theta) * p.Y + Math.Sin(rb.theta) * p.X, p.Z), out x, out y));
-                        if (cpi == -1) return true;
+                        cpi = body.CollidePoints.FindIndex(cpi + 1, p => Blocks.IsCollidable(rb.position + new Vector3D(Math.Cos(rb.theta) * p.X - Math.Sin(rb.theta) * p.Y, Math.Cos(rb.theta) * p.Y + Math.Sin(rb.theta) * p.X, p.Z), out x, out y));
+                        if (cpi == -1)
+                        {
+                            {
+                                if (!tracks.UpdateRigidBody(secs,Math.Cos( RotationY),  RB.velocity - RB._velocity,RB.theta, out Vector3D reactionForce, out double reactionTorque)) return false;
+                                //RB.force += reactionForce;
+                                //RB.alpha += reactionTorque;
+                            }
+                            return true;
+                        }
                         var cp = body.CollidePoints[cpi];
                         const double bounce = 0.5;
                         double t;
                         t = cp.X * -Math.Sin(rb.theta) + cp.Y * -Math.Cos(rb.theta);
-                        if (x == cur_x - 1 && !IsCollidable(cur_x, y) && rb.velocity.X + t * rb.omega < 0)//collide left, +x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x+f/m) + (omega+f*t/I)*t = -b*(v.x + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.x+omega*t)
+                        if (x == cur_x - 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X + t * rb.omega < 0)//collide left, +x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x+f/m) + (omega+f*t/I)*t = -b*(v.x + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.x+omega*t)
                         {
                             var f = (-bounce - 1) * (rb.velocity.X + rb.omega * t) / (1.0 / rb.mass + t * t / rb.momentOfInertia);
                             //f += -rb.force.X * secs;
@@ -97,7 +104,7 @@ namespace Digging_Game_3.Models
                             rb.omega += f * t / rb.momentOfInertia;
                         }
                         t = cp.X * -Math.Sin(rb.theta) + cp.Y * -Math.Cos(rb.theta);
-                        if (x == cur_x + 1 && !IsCollidable(cur_x, y) && rb.velocity.X + t * rb.omega > 0)//collide right, -x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x-f/m) + (omega-f*t/I)*t = -b*(v.x + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.x+omega*t)
+                        if (x == cur_x + 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X + t * rb.omega > 0)//collide right, -x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x-f/m) + (omega-f*t/I)*t = -b*(v.x + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.x+omega*t)
                         {
                             var f = (-bounce - 1) * (rb.velocity.X + rb.omega * t) / (-1.0 / rb.mass - t * t / rb.momentOfInertia);
                             //f += rb.force.X * secs;
@@ -105,7 +112,7 @@ namespace Digging_Game_3.Models
                             rb.omega -= f * t / rb.momentOfInertia;
                         }
                         t = cp.Y * -Math.Sin(rb.theta) + cp.X * Math.Cos(rb.theta);
-                        if (y == cur_y - 1 && !IsCollidable(x, cur_y) && rb.velocity.Y + t * rb.omega < 0)//collide down, +y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y+f/m) + (omega+f*t/I)*t = -b*(v.y + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.y+omega*t)
+                        if (y == cur_y - 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y + t * rb.omega < 0)//collide down, +y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y+f/m) + (omega+f*t/I)*t = -b*(v.y + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.y+omega*t)
                         {
                             _IsCollideDown = true;
                             var f = (-bounce - 1) * (rb.velocity.Y + rb.omega * t) / (1.0 / rb.mass + t * t / rb.momentOfInertia);
@@ -114,7 +121,7 @@ namespace Digging_Game_3.Models
                             rb.omega += f * t / rb.momentOfInertia;
                         }
                         t = cp.Y * -Math.Sin(rb.theta) + cp.X * Math.Cos(rb.theta);
-                        if (y == cur_y + 1 && !IsCollidable(x, cur_y) && rb.velocity.Y + t * rb.omega > 0)//collide up, -y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y-f/m) + (omega-f*t/I)*t = -b*(v.y + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.y+omega*t)
+                        if (y == cur_y + 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y + t * rb.omega > 0)//collide up, -y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y-f/m) + (omega-f*t/I)*t = -b*(v.y + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.y+omega*t)
                         {
                             var f = (-bounce - 1) * (rb.velocity.Y + rb.omega * t) / (-1.0 / rb.mass - t * t / rb.momentOfInertia);
                             //f += rb.force.Y * secs;
@@ -124,21 +131,29 @@ namespace Digging_Game_3.Models
                         //System.Diagnostics.Trace.WriteLine($"position: {rb.position}, \tvelocity: {rb.velocity}, \ttheta: {rb.theta}, \tomega: {rb.omega}");
                     }
                 }
-                return !body.CollidePoints.Any(p => IsCollidable(rb.position +new Vector3D(Math.Cos(rb.theta) * p.X - Math.Sin(rb.theta) * p.Y, Math.Cos(rb.theta) * p.Y + Math.Sin(rb.theta) * p.X, p.Z), out x, out y));
+                if (body.CollidePoints.Any(p => Blocks.IsCollidable(ToWorldPoint2D(new Point3D() + p), out x, out y))) return false;
+                {
+                    if (!tracks.UpdateRigidBody(secs, Math.Cos(RotationY), RB.velocity - RB._velocity, RB.theta, out Vector3D reactionForce, out double reactionTorque)) return false;
+                    //RB.force += reactionForce;
+                    //RB.alpha += reactionTorque;
+                }
+                return true;
             }))
             {
                 MaintainRigitBody(0.5 * secs);
                 MaintainRigitBody(0.5 * secs);
             }
         }
-        bool IsCollidable(Point3D p, out int x, out int y)
-        {
-            x = (int)Math.Floor((p.X - Blocks.Anchor.X) / Blocks.Width);
-            y = (int)Math.Floor((p.Y - Blocks.Anchor.Y) / Blocks.Height);
-            return IsCollidable(x, y);
-        }
-        public static bool IsCollidable(int x,int y) { return y <= -1 || y >= 9 || x <= -5 || x >= 5||(x>=-1&&x<=1&&y==2); }
         RigidBody RB = new RigidBody();
+        Point3D ToWorldPoint2D(Point3D localPoint) { return RB.position + new Vector3D(Math.Cos(RB.theta) * localPoint.X - Math.Sin(RB.theta) * localPoint.Y, Math.Cos(RB.theta) * localPoint.Y + Math.Sin(RB.theta) * localPoint.X, localPoint.Z); }
+        Point3D ToWorldPoint3D(Point3D localPoint)
+        {
+            var ans = localPoint;
+            ans = new Point3D() + new Vector3D(Math.Cos(RotationY) * ans.X - Math.Sin(RotationY) * ans.Z, ans.Y, Math.Cos(RotationY) * ans.Z + Math.Sin(RotationY) * ans.X);
+            ans = ToWorldPoint2D(ans);
+            if (Keyboard.IsDown(System.Windows.Input.Key.Z)) Trace.WriteLine($"local: {localPoint}, \tglobal: {ans}");
+            return ans;
+        }
         public Pod():base()
         {
             int isOnGround = 0;
