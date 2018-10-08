@@ -15,7 +15,8 @@ namespace Digging_Game_3.Models
                 public class Gear : My3DObject
                 {
                     const int TransformIndexPosition = 0;
-                    const int TransformIndexSpin = 1;
+                    const int TransformIndexRotateY = 1;
+                    const int TransformIndexSpin = 2;
                     Body Parent;
                     public Point3D Position{get { return RB.position; }}
                     public Point3D RelativePosition { get; private set; }
@@ -26,15 +27,35 @@ namespace Digging_Game_3.Models
                     public double Mass { get; private set; }
                     public Gear(Point3D desiredPosition,double radius,double suspensionHardness,double mass, Body parent) : base(desiredPosition,radius, suspensionHardness,mass,parent)
                     {
+                        var preMatrixY = Parent.MatrixY;
                         Parent.RigidBodyUpdating += (secs,rb) =>
                         {
                             var parentVelocity = rb.GetVelocityAt(RelativePosition * Parent.MatrixY);
-                            var f = ReactForce - 0.5 * (parentVelocity - RB.velocity);
+                            var f1 = ReactForce;
+                            var f2 = -0.5 * (parentVelocity - RB.velocity);
+                            //if (Math.Abs((new Vector3D(1, 0, 0) * Parent.MatrixY).Z) > 0.01)
+                            //{
+                            //    //RB.velocity = parentVelocity;
+                            //    f1 *= 2;
+                            //    f2 *= 2;
+                            //}
+                            var f = f1 + f2;
                             rb.force += f;
                             onGround -= secs;
                             if (onGround < 0) onGround = 0;
                             RB.force = new Vector3D(0, -RB.mass * Constants.Gravity, 0);
                             RB.force -= f;
+                            {
+                                var friction = (new Vector3D(Parent.TrackSpeed - (RB.velocity * Parent.MatrixY).X, 0, 0) * Parent.MatrixY).X * 0.5 * Math.Max(0, ReactForce.Y);
+                                double maxFriction = SuspensionHardness * 0.05;
+                                if (friction > maxFriction) friction = maxFriction;
+                                if (friction < -maxFriction) friction = -maxFriction;
+                                RB.force.X += friction;
+                            }
+                            RB.theta += secs * Parent.TrackSpeed / Radius;
+                            //RB.position = RB.position * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                            //RB.velocity = RB.velocity * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                            preMatrixY = Parent.MatrixY;
                             UpdateRigitBody(secs, parentVelocity);
                             ///minimize: (px+a*fx)^2+(py+a*fy)^2
                             ///2(px+a*fx)*fx+2(py+a*fy)*fy=0
@@ -50,6 +71,8 @@ namespace Digging_Game_3.Models
                                 rb.alpha += torque;
                             }
                             MyLib.Set(SubTransforms, TransformIndexPosition, true).TranslatePrepend(Position - new Point3D()).Done();
+                            SubTransforms[TransformIndexRotateY] = new MatrixTransform3D(Parent.MatrixY);
+                            MyLib.Set(SubTransforms, TransformIndexSpin, true).RotatePrepend(new Vector3D(0,0,-1), RB.theta).Done();
                             UpdateTransform();
                         };
                     }
@@ -122,6 +145,7 @@ namespace Digging_Game_3.Models
                     {
                         SubTransforms.Add(new MatrixTransform3D());
                         SubTransforms.Add(new MatrixTransform3D());
+                        SubTransforms.Add(new MatrixTransform3D());
                         MyLib.AssertTypes(vs, typeof(Point3D),typeof(double),typeof(double),typeof(double),typeof(Body));
                         RelativePosition = (Point3D)vs[0];
                         Radius = (double)vs[1];
@@ -134,7 +158,14 @@ namespace Digging_Game_3.Models
                         List<Point3D> positions = new List<Point3D>();
                         for (int i = 0; i < n; i++) positions.Add(new Point3D(Radius * Math.Cos(2 * Math.PI * i / n), Radius * Math.Sin(2 * Math.PI * i / n), 0));
                         List<int> triangleIndices = new List<int>();
-                        for (int i = 2; i < n; i++) triangleIndices.AddRange(new[] { 0, i - 1, i });
+                        var ans = new Model3DGroup();
+                        for (int i = 2; i < n; i++)
+                        {
+                            var color = Color.FromArgb(255, (byte)MyLib.Rand.Next(110, 150), (byte)MyLib.Rand.Next(110, 150), (byte)MyLib.Rand.Next(110, 150));
+                            ans.Children.Add(My3DGraphics.NewModel().AddTriangles(new[] { positions[0], positions[i - 1], positions[i] }, new[] { 0, 1, 2, 2, 1, 0 }).CreateModel(new SolidColorBrush(color)));
+                            triangleIndices.AddRange(new[] { 0, i - 1, i, i, i - 1, 0 });
+                        }
+                        return ans;
                         triangleIndices = triangleIndices.Concat(triangleIndices.Reverse<int>()).ToList();
                         return My3DGraphics.NewModel().AddTriangles(positions, triangleIndices).CreateModel(new SolidColorBrush(Colors.Gray));
                     }

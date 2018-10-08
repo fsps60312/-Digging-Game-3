@@ -18,6 +18,10 @@ namespace Digging_Game_3.Models
             public List<Vector3D> CollidePoints { get; private set; } = new List<Vector3D>
             {new Vector3D(-BodyRadius,-BodyRadius,0),new Vector3D(-BodyRadius,BodyRadius,0),new Vector3D(BodyRadius,-BodyRadius,0),new Vector3D(BodyRadius,BodyRadius,0) };
             public Func<bool> IsOnGround = () => false;
+            public double TrackSpeed = 0;
+            public double MaxTrackAcceleration = 10;
+            public double MaxTrackPower = 200;
+            public double TrackFriction = 2;
             public Body():base()
             {
                 propeller.IsOnGround = () => IsOnGround();
@@ -34,6 +38,17 @@ namespace Digging_Game_3.Models
                         RB.force += new Vector3D(0, -RB.mass * Constants.Gravity, 0);
                         RB.force += new Vector3D(-Math.Sin(RB.theta) * propeller.LiftForce(), Math.Cos(RB.theta) * propeller.LiftForce(), 0);
                         MaintainRigidBody(secs);
+                    }
+                    {
+                        double frictionAcceleration = (TrackSpeed > 0 ? -1 : 1)*(TrackFriction + 0.5 * Math.Abs( TrackSpeed));
+                        double acceleration = 0;
+                        if (IsOnGround() && Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
+                        {
+                            acceleration += Math.Min(MaxTrackAcceleration, MaxTrackPower / Math.Max(Math.Abs(TrackSpeed), double.MinValue));
+                        }
+                        TrackSpeed += acceleration * secs;
+                        if ((TrackSpeed > 0) != (TrackSpeed + frictionAcceleration * secs > 0)) TrackSpeed = 0;
+                        else TrackSpeed += frictionAcceleration * secs;
                     }
                     OriginTransform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
                     const double lookOffset = 1.3;

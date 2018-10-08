@@ -43,9 +43,12 @@ namespace Digging_Game_3.Models
                 {
                     {
                         double r = 0;
+                        var initialChainLength = GetChainLength(gears);
                         parent.RigidBodyUpdating+= (secs,rb) =>
                           {
-                              r -= secs * 0.1;
+                              var chainLength = GetChainLength(gears);
+                              if (double.IsNaN(chainLength)) chainLength = initialChainLength;
+                              r -= secs * Parent.TrackSpeed / chainLength;
                               r = (r % 1 + 1) % 1;
                               for (int i = 0; i < Teeth.Count; i++)
                               {
@@ -132,11 +135,11 @@ namespace Digging_Game_3.Models
                     foreach (var gv in chain)
                     {
                         var p = gv.Item1;
-                        var gear = new Gear(p, gv.Item2, gv.Item4,gv.Item3, Parent);
+                        var gear = new Gear(p, gv.Item2, gv.Item4 * 2, gv.Item3, Parent);
                         ans.Children.Add(gear.Model);
                         gears.Add(gear);
                     }
-                    foreach (var i in new[] { 0, 1, 2, 3, 4 }) groundGears.Add(gears[i]);
+                    foreach (var i in new[] { 3, 4 }) groundGears.Add(gears[i]);
                     double chainLength = GetChainLength(gears);
                     int count =(int)( chainLength / 0.5);
                     for (int i = 0; i < count; i++)
