@@ -31,6 +31,15 @@ namespace Digging_Game_3.Models
                         var preMatrixZ = Parent.MatrixZ;
                         Parent.RigidBodyUpdating += (secs,rb) =>
                         {
+                            {
+                                var newPosition = RB.position * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                                var newVelocity = RB.velocity * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                                //RB.position.X = newPosition.X; RB.position.Z = newPosition.Z;
+                                RB.position = newPosition;
+                                //RB.velocity.X = newVelocity.X; RB.velocity.Y = newVelocity.Y;
+                                preMatrixY = Parent.MatrixY;
+                                preMatrixZ = Parent.MatrixZ;
+                            }
                             var parentVelocity = rb.GetVelocityAt(RelativePosition * Parent.MatrixY);
                             var f1 = ReactForce;
                             var f2 = -0.5 * (parentVelocity - RB.velocity);
@@ -54,14 +63,6 @@ namespace Digging_Game_3.Models
                                 RB.force.X += friction;
                             }
                             RB.theta += secs * Parent.TrackSpeed / Radius;
-                            {
-                                var newPosition = RB.position * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
-                                var newVelocity = RB.velocity * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
-                                RB.position.X = newPosition.X; RB.position.Z = newPosition.Z;
-                                //RB.velocity.X = newVelocity.X; RB.velocity.Y = newVelocity.Y;
-                                preMatrixY = Parent.MatrixY;
-                                preMatrixZ = Parent.MatrixZ;
-                            }
                             UpdateRigitBody(secs, parentVelocity);
                             ///minimize: (px+a*fx)^2+(py+a*fy)^2
                             ///2(px+a*fx)*fx+2(py+a*fy)*fy=0
