@@ -47,7 +47,7 @@ namespace Digging_Game_3.Models
                             RB.force = new Vector3D(0, -RB.mass * Constants.Gravity, 0);
                             RB.force -= f;
                             {
-                                var friction = (new Vector3D(Parent.TrackSpeed - (RB.velocity * Parent.MatrixY).X, 0, 0) * Parent.MatrixY).X * 0.5 * Math.Max(0, ReactForce.Y);
+                                var friction = (new Vector3D(Parent.TrackSpeed, 0, 0) * Parent.MatrixY-RB.velocity).X * 0.5 * Math.Max(0, ReactForce.Y);
                                 double maxFriction = SuspensionHardness * 0.1;
                                 if (friction > maxFriction) friction = maxFriction;
                                 if (friction < -maxFriction) friction = -maxFriction;
