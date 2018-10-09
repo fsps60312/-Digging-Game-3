@@ -20,7 +20,7 @@ namespace Digging_Game_3.Models
             public Func<bool> IsOnGround = () => false;
             public double TrackSpeed = 0;
             public double MaxTrackAcceleration = 10;
-            public double MaxTrackPower = 200;
+            public double MaxTrackPower = 50;
             public double TrackFriction = 2;
             public Body():base()
             {
@@ -40,17 +40,17 @@ namespace Digging_Game_3.Models
                         MaintainRigidBody(secs);
                     }
                     {
-                        double frictionAcceleration = (TrackSpeed > 0 ? -1 : 1) * (TrackFriction + 0.5 * Math.Abs(TrackSpeed));
+                        double frictionAcceleration = (TrackSpeed > 0 ? -1 : 1) * (TrackFriction /*+ 0.5 * Math.Abs(TrackSpeed)*/);
                         double acceleration = 0;
                         if (IsOnGround() && Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
                         {
-                            if (Keyboard.IsDown(RotationY > Math.PI / 2 ? System.Windows.Input.Key.A : System.Windows.Input.Key.D))
+                            if (!Keyboard.IsDown(RotationY > Math.PI / 2 ? System.Windows.Input.Key.D : System.Windows.Input.Key.A))
                             {
                                 acceleration += Math.Min(MaxTrackAcceleration, MaxTrackPower / Math.Max(Math.Abs(TrackSpeed), double.MinValue));
                             }
                             else
                             {
-                                frictionAcceleration -= MaxTrackAcceleration;
+                                frictionAcceleration += (TrackSpeed > 0 ? -1 : 1) * MaxTrackAcceleration;
                             }
                         }
                         TrackSpeed += acceleration * secs;
@@ -122,9 +122,9 @@ namespace Digging_Game_3.Models
             {
                 if ((!IsOnGround() || TrackSpeed == 0) && Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
                 {
-                    DesiredRotationY = Math.PI / 2;
-                    if (Keyboard.IsDown(System.Windows.Input.Key.A)) DesiredRotationY += Math.PI / 2;
-                    if (Keyboard.IsDown(System.Windows.Input.Key.D)) DesiredRotationY -= Math.PI / 2;
+                    //DesiredRotationY = Math.PI / 2;
+                    if (Keyboard.IsDown(System.Windows.Input.Key.A)&&!Keyboard.IsDown(System.Windows.Input.Key.D)) DesiredRotationY = Math.PI;
+                    if (Keyboard.IsDown(System.Windows.Input.Key.D)&&!Keyboard.IsDown(System.Windows.Input.Key.A)) DesiredRotationY = 0;
                 }
                 MyLib.SmoothTo(ref RotationY, DesiredRotationY, secs, Math.Max(Math.Abs(DesiredRotationY - RotationY) / Math.PI, 0.2) * 0.2);
                 MyLib.Set(SubTransforms, TransformIndexRotateAroundY, true).RotatePrepend(new Vector3D(0, -1, 0), RotationY).Done();

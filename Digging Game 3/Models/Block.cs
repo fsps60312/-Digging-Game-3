@@ -16,7 +16,7 @@ namespace Digging_Game_3.Models
             y = (int)Math.Floor((p.Y - Blocks.Anchor.Y) / Blocks.Height);
             return Blocks.IsCollidable(x, y);
         }
-        public static bool IsCollidable(int x, int y) { return y <= -5 || y >= 9 || x <= -5 || x >= 5 || (x >= -1 && x <= 1 && y == 2); }
+        public static bool IsCollidable(int x, int y) { return y <= -5 || y >= 15 || x <= -15 || x >= 15 || (x >= -1 && x <= 1 && y == 2); }
     }
     partial class Blocks : My3DObject
     {
