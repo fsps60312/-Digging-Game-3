@@ -40,11 +40,18 @@ namespace Digging_Game_3.Models
                         MaintainRigidBody(secs);
                     }
                     {
-                        double frictionAcceleration = (TrackSpeed > 0 ? -1 : 1)*(TrackFriction + 0.5 * Math.Abs( TrackSpeed));
+                        double frictionAcceleration = (TrackSpeed > 0 ? -1 : 1) * (TrackFriction + 0.5 * Math.Abs(TrackSpeed));
                         double acceleration = 0;
                         if (IsOnGround() && Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
                         {
-                            acceleration += Math.Min(MaxTrackAcceleration, MaxTrackPower / Math.Max(Math.Abs(TrackSpeed), double.MinValue));
+                            if (Keyboard.IsDown(RotationY > Math.PI / 2 ? System.Windows.Input.Key.A : System.Windows.Input.Key.D))
+                            {
+                                acceleration += Math.Min(MaxTrackAcceleration, MaxTrackPower / Math.Max(Math.Abs(TrackSpeed), double.MinValue));
+                            }
+                            else
+                            {
+                                frictionAcceleration -= MaxTrackAcceleration;
+                            }
                         }
                         TrackSpeed += acceleration * secs;
                         if ((TrackSpeed > 0) != (TrackSpeed + frictionAcceleration * secs > 0)) TrackSpeed = 0;
@@ -113,7 +120,7 @@ namespace Digging_Game_3.Models
             }
             void MaintainRotationY(double secs)
             {
-                if (Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
+                if ((!IsOnGround() || TrackSpeed == 0) && Keyboard.IsDown(System.Windows.Input.Key.A, System.Windows.Input.Key.D))
                 {
                     DesiredRotationY = Math.PI / 2;
                     if (Keyboard.IsDown(System.Windows.Input.Key.A)) DesiredRotationY += Math.PI / 2;

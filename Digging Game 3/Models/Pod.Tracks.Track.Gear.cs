@@ -28,6 +28,7 @@ namespace Digging_Game_3.Models
                     public Gear(Point3D desiredPosition,double radius,double suspensionHardness,double mass, Body parent) : base(desiredPosition,radius, suspensionHardness,mass,parent)
                     {
                         var preMatrixY = Parent.MatrixY;
+                        var preMatrixZ = Parent.MatrixZ;
                         Parent.RigidBodyUpdating += (secs,rb) =>
                         {
                             var parentVelocity = rb.GetVelocityAt(RelativePosition * Parent.MatrixY);
@@ -47,15 +48,20 @@ namespace Digging_Game_3.Models
                             RB.force -= f;
                             {
                                 var friction = (new Vector3D(Parent.TrackSpeed - (RB.velocity * Parent.MatrixY).X, 0, 0) * Parent.MatrixY).X * 0.5 * Math.Max(0, ReactForce.Y);
-                                double maxFriction = SuspensionHardness * 0.05;
+                                double maxFriction = SuspensionHardness * 0.1;
                                 if (friction > maxFriction) friction = maxFriction;
                                 if (friction < -maxFriction) friction = -maxFriction;
                                 RB.force.X += friction;
                             }
                             RB.theta += secs * Parent.TrackSpeed / Radius;
-                            //RB.position = RB.position * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
-                            //RB.velocity = RB.velocity * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
-                            preMatrixY = Parent.MatrixY;
+                            {
+                                var newPosition = RB.position * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                                var newVelocity = RB.velocity * MyLib.Inverse(preMatrixY * Parent.MatrixZ * Parent.MatrixT) * Parent.MatrixY * Parent.MatrixZ * Parent.MatrixT;
+                                RB.position.X = newPosition.X; RB.position.Z = newPosition.Z;
+                                //RB.velocity.X = newVelocity.X; RB.velocity.Y = newVelocity.Y;
+                                preMatrixY = Parent.MatrixY;
+                                preMatrixZ = Parent.MatrixZ;
+                            }
                             UpdateRigitBody(secs, parentVelocity);
                             ///minimize: (px+a*fx)^2+(py+a*fy)^2
                             ///2(px+a*fx)*fx+2(py+a*fy)*fy=0
@@ -86,52 +92,82 @@ namespace Digging_Game_3.Models
                             if (secs > 1e-3) return false;
                             var dif = (rb.position - rb._position).Length;
                             if (dif > Radius / 5) return false;
-                            int x = 0, y = 0;
-                            Blocks.IsCollidable(rb.position, out int cur_x, out int cur_y);
+                            if(!Blocks.IsCollidable(rb.position, out int cur_x, out int cur_y))
                             {
+                                //bool rollback = false;
+                                const double rollbackSpeed = 0.1;
                                 const double bounce = 0.5;
-                                Point3D cp;
-                                cp = rb.position + new Vector3D(-Radius, 0, 0);
-                                if (Blocks.IsCollidable(cp, out x, out y))
                                 {
-                                    if (x == cur_x - 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X < 0)//collide left, +x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x+f/m) + (omega+f*t/I)*t = -b*(v.x + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.x+omega*t)
+                                    int x = 0, y = 0;
+                                    Point3D cp;
+                                    cp = rb.position + new Vector3D(-Radius, 0, 0);
+                                    if (Blocks.IsCollidable(cp, out x, out y))
                                     {
-                                        var f = (-bounce - 1) * (rb.velocity.X) / (1.0 / rb.mass);
-                                        rb.velocity.X += f / rb.mass;
-                                        rb.position = rb._position;
+                                        if (x == cur_x - 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X < 0)//collide left, +x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x+f/m) + (omega+f*t/I)*t = -b*(v.x + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.x+omega*t)
+                                        {
+                                            var f = (-bounce - 1) * (rb.velocity.X) / (1.0 / rb.mass);
+                                            rb.velocity.X += f / rb.mass;
+                                            //rollback = true;
+                                            rb.position.X += secs * rollbackSpeed;
+                                        }
+                                    }
+                                    cp = rb.position + new Vector3D(Radius, 0, 0);
+                                    if (Blocks.IsCollidable(cp, out x, out y))
+                                    {
+                                        if (x == cur_x + 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X > 0)//collide right, -x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x-f/m) + (omega-f*t/I)*t = -b*(v.x + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.x+omega*t)
+                                        {
+                                            var f = (-bounce - 1) * (rb.velocity.X) / (-1.0 / rb.mass);
+                                            rb.velocity.X -= f / rb.mass;
+                                            //rollback = true;
+                                            rb.position.X -= secs * rollbackSpeed;
+                                        }
+                                    }
+                                    cp = rb.position + new Vector3D(0, -Radius, 0);
+                                    if (Blocks.IsCollidable(cp, out x, out y))
+                                    {
+                                        if (y == cur_y - 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y < 0)//collide down, +y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y+f/m) + (omega+f*t/I)*t = -b*(v.y + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.y+omega*t)
+                                        {
+                                            var f = (-bounce - 1) * (rb.velocity.Y) / (1.0 / rb.mass);
+                                            rb.velocity.Y += f / rb.mass;
+                                            //rollback = true;
+                                            rb.position.Y += secs * rollbackSpeed;
+                                            onGround = 0.1;
+                                        }
+                                    }
+                                    cp = rb.position + new Vector3D(0, Radius, 0);
+                                    if (Blocks.IsCollidable(cp, out x, out y))
+                                    {
+                                        if (y == cur_y + 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y > 0)//collide up, -y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y-f/m) + (omega-f*t/I)*t = -b*(v.y + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.y+omega*t)
+                                        {
+                                            var f = (-bounce - 1) * (rb.velocity.Y) / (-1.0 / rb.mass);
+                                            rb.velocity.Y -= f / rb.mass;
+                                            //rollback = true;
+                                            rb.position.Y -= secs * rollbackSpeed;
+                                        }
                                     }
                                 }
-                                cp = rb.position + new Vector3D(Radius, 0, 0);
-                                if (Blocks.IsCollidable(cp, out x, out y))
+                                //if(false)
                                 {
-                                    if (x == cur_x + 1 && !Blocks.IsCollidable(cur_x, y) && rb.velocity.X > 0)//collide right, -x force. t=(cp.x*-Sin(theta)+cp.y*-Cos(theta)), (v.x-f/m) + (omega-f*t/I)*t = -b*(v.x + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.x+omega*t)
+                                    Blocks.IsCollidable(rb.position + new Vector3D(Blocks.Width / 2, Blocks.Height/2, 0), out int cross_x, out int cross_y);
+                                    var vectorToCross = new Vector3D((Blocks.Anchor.X + Blocks.Width * cross_x) - rb.position.X, (Blocks.Anchor.Y + Blocks.Height * cross_y) - rb.position.Y, 0);
+                                    if (0<vectorToCross.Length&&vectorToCross.Length < Radius && Vector3D.DotProduct(rb.velocity, vectorToCross) > 0)
                                     {
-                                        var f = (-bounce - 1) * (rb.velocity.X) / (-1.0 / rb.mass);
-                                        rb.velocity.X -= f / rb.mass;
-                                        rb.position = rb._position;
+                                        int x = vectorToCross.X < 0 ? cross_x - 1 : cross_x;
+                                        int y = vectorToCross.Y < 0 ? cross_y - 1 : cross_y;
+                                        if (Blocks.IsCollidable(x, y))
+                                        {
+                                            ///(v+a*c)。c=-b*(v。c)
+                                            ///(vx+a*cx)*cx+(vy+a*cy)*cy=-b*(vx*cx+vy*cy)
+                                            ///a(cx*cx+cy*cy)+vx*cx+vy*cy=-b*(vx*cx+vy*cy)
+                                            ///a=(-b*(vx*cx+vy*cy)-(vx*cx+vy*cy))/(cx*cx+cy*cy)
+                                            double a = ((-bounce - 1) * Vector3D.DotProduct(rb.velocity, vectorToCross)) / Vector3D.DotProduct(vectorToCross, vectorToCross);
+                                            rb.velocity += a * vectorToCross;
+                                            //rollback = true;
+                                            rb.position += -vectorToCross / vectorToCross.Length * rollbackSpeed;
+                                        }
                                     }
                                 }
-                                cp = rb.position + new Vector3D(0, -Radius, 0);
-                                if (Blocks.IsCollidable(cp, out x, out y))
-                                {
-                                    if (y == cur_y - 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y< 0)//collide down, +y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y+f/m) + (omega+f*t/I)*t = -b*(v.y + omega*t), f*(1/m+t^2/I)=(-b-1)*(v.y+omega*t)
-                                    {
-                                        var f = (-bounce - 1) * (rb.velocity.Y) / (1.0 / rb.mass);
-                                        rb.velocity.Y += f / rb.mass;
-                                        rb.position = rb._position;
-                                        onGround = 0.1;
-                                    }
-                                }
-                                cp = rb.position + new Vector3D(0, Radius, 0);
-                                if (Blocks.IsCollidable(cp, out x, out y))
-                                {
-                                    if (y == cur_y + 1 && !Blocks.IsCollidable(x, cur_y) && rb.velocity.Y > 0)//collide up, -y force. t=(cp.y*-Sin(theta)+cp.x*Cos(theta)), (v.y-f/m) + (omega-f*t/I)*t = -b*(v.y + omega*t), f*(-1/m-t^2/I)=(-b-1)*(v.y+omega*t)
-                                    {
-                                        var f = (-bounce - 1) * (rb.velocity.Y ) / (-1.0 / rb.mass);
-                                        rb.velocity.Y -= f / rb.mass;
-                                        rb.position = rb._position;
-                                    }
-                                }
+                                //if (rollback) rb.position = rb._position;
                                 //System.Diagnostics.Trace.WriteLine($"position: {rb.position}, \tvelocity: {rb.velocity}, \ttheta: {rb.theta}, \tomega: {rb.omega}");
                             }
                             return true;
