@@ -97,7 +97,7 @@ namespace Digging_Game_3.Models
                             {
                                 //bool rollback = false;
                                 const double rollbackSpeed = 0.1;
-                                const double bounce = 0.5;
+                                const double bounce = 0.1;
                                 {
                                     int x = 0, y = 0;
                                     Point3D cp;
