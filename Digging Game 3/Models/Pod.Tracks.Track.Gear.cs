@@ -164,7 +164,7 @@ namespace Digging_Game_3.Models
                                             double a = ((-bounce - 1) * Vector3D.DotProduct(rb.velocity, vectorToCross)) / Vector3D.DotProduct(vectorToCross, vectorToCross);
                                             rb.velocity += a * vectorToCross;
                                             //rollback = true;
-                                            rb.position += -vectorToCross / vectorToCross.Length * rollbackSpeed;
+                                            rb.position += -vectorToCross / vectorToCross.Length * secs * rollbackSpeed;
                                         }
                                     }
                                 }
