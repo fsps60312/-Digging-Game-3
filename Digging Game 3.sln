@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Digging Game 3", "Digging Game 3\Digging Game 3.csproj", "{5089A5D6-27BA-4414-85CB-1A36F2790718}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModelEditor", "ModelEditor\ModelEditor.csproj", "{0A579860-16DA-4558-87F5-AA45860AB47F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{5089A5D6-27BA-4414-85CB-1A36F2790718}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5089A5D6-27BA-4414-85CB-1A36F2790718}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5089A5D6-27BA-4414-85CB-1A36F2790718}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0A579860-16DA-4558-87F5-AA45860AB47F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A579860-16DA-4558-87F5-AA45860AB47F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A579860-16DA-4558-87F5-AA45860AB47F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A579860-16DA-4558-87F5-AA45860AB47F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
