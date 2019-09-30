@@ -130,7 +130,7 @@ namespace Digging_Game_3.Models
         }
         public Blocks()
         {
-            Kernel.Heart.Beat += (secs) =>
+            Kernel.Heart.Beat2 += () =>
             {
                 //int xI = (int)Math.Round((Kernel.CameraProperties.position.X - Anchor.X) / Width);
                 //int yI = (int)Math.Round((Kernel.CameraProperties.position.Y - Anchor.Y) / Height);

@@ -9,6 +9,18 @@ namespace Digging_Game_3
 {
     public class RigidBody
     {
+        public RigidBody() { }
+        public RigidBody(RigidBody rb)
+        {
+            position = rb.position;
+            velocity = rb.velocity;
+            force = rb.force;
+            mass = rb.mass;
+            theta = rb.theta;
+            omega = rb.omega;
+            alpha = rb.alpha;
+            momentOfInertia = rb.momentOfInertia;
+        }
         public Point3D position;
         public Vector3D velocity;
         public Vector3D force;

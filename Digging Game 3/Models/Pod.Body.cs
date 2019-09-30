@@ -19,13 +19,14 @@ namespace Digging_Game_3.Models
             {new Vector3D(-BodyRadius,-BodyRadius,0),new Vector3D(-BodyRadius,BodyRadius,0),new Vector3D(BodyRadius,-BodyRadius,0),new Vector3D(BodyRadius,BodyRadius,0) };
             public Func<bool> IsOnGround = () => false;
             public double TrackSpeed = 0;
+            double NextTrackSpeed = 0;
             public double MaxTrackAcceleration = 10;
             public double MaxTrackPower = 50;
             public double TrackFriction = 2;
             public Body():base()
             {
                 propeller.IsOnGround = () => IsOnGround();
-                Kernel.Heart.Beat += (secs) =>
+                Kernel.Heart.Beat1 += (secs) =>
                 {
                     //if (IsOnGround()) System.Diagnostics.Trace.WriteLine("A");
                     MaintainRotationY(secs);
@@ -37,6 +38,7 @@ namespace Digging_Game_3.Models
                         RigidBodyUpdating?.Invoke(secs, RB);
                         RB.force += new Vector3D(0, -RB.mass * Constants.Gravity, 0);
                         RB.force += new Vector3D(-Math.Sin(RB.theta) * propeller.LiftForce(), Math.Cos(RB.theta) * propeller.LiftForce(), 0);
+                        NextRB = new RigidBody(RB);
                         MaintainRigidBody(secs);
                     }
                     {
@@ -53,11 +55,11 @@ namespace Digging_Game_3.Models
                                 frictionAcceleration += (TrackSpeed > 0 ? -1 : 1) * MaxTrackAcceleration;
                             }
                         }
-                        TrackSpeed += acceleration * secs;
-                        if ((TrackSpeed > 0) != (TrackSpeed + frictionAcceleration * secs > 0)) TrackSpeed = 0;
-                        else TrackSpeed += frictionAcceleration * secs;
+                        NextTrackSpeed = TrackSpeed;
+                        NextTrackSpeed += acceleration * secs;
+                        if ((NextTrackSpeed > 0) != (NextTrackSpeed + frictionAcceleration * secs > 0)) NextTrackSpeed = 0;
+                        else NextTrackSpeed += frictionAcceleration * secs;
                     }
-                    OriginTransform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
                     const double lookOffset = 1.3;
                     MyLib.SmoothTo(ref Kernel.CameraProperties.position, RB.position + new Vector3D(0, 0, 30 / Math.Pow(0.4 + SetZ(RB.position - Kernel.CameraProperties.position, 0).Length * 0.1, 0.5)), secs, 0.2);
                     var target = RB.position + 0.1 * RB.velocity - Kernel.CameraProperties.position;
@@ -67,7 +69,6 @@ namespace Digging_Game_3.Models
                     target.X *= targetLen / len;
                     target.Y *= targetLen / len;
                     MyLib.SmoothTo(ref Kernel.CameraProperties.lookDirection, target, secs, 0.2);
-                    UpdateTransform();
                     //this.Folding = 1;
                     //for(int i=0;i<1;i++)
                     {
@@ -78,6 +79,16 @@ namespace Digging_Game_3.Models
                             , Color.FromArgb(50, color, color, color)
                             , 0.1, 2, 2, speed.Length * 1.5);
                     }
+                };
+                Kernel.Heart.Beat2 += () =>
+                {
+                    RotationY = NextRotationY;
+                    MyLib.Set(SubTransforms, TransformIndexRotateAroundY, true).RotatePrepend(new Vector3D(0, -1, 0), RotationY).Done();
+                    MyLib.Set(SubTransforms, TransformIndexRotateAroundZ, true).RotatePrepend(new Vector3D(0, 0, 1), RB.theta).Done();
+                    RB = NextRB;
+                    TrackSpeed = NextTrackSpeed;
+                    OriginTransform = MyLib.Transform(new MatrixTransform3D()).Translate(RB.position - new Point3D()).Value;
+                    UpdateTransform();
                 };
             }
             protected override Model3D CreateModel(params object[] vs)
@@ -97,6 +108,7 @@ namespace Digging_Game_3.Models
                 return ans;
             }
             double RotationY = 0;
+            double NextRotationY = 0;
             double DesiredRotationY = 0;
             void MaintainRotationZ(double secs)
             {
@@ -116,7 +128,6 @@ namespace Digging_Game_3.Models
                 }
                 //else RB.alpha = -1 * (RB.theta - 1 * RB.omega);
                 RB.alpha += -1 * Math.Abs(RB.omega) * RB.omega - 1 * RB.omega;
-                MyLib.Set(SubTransforms, TransformIndexRotateAroundZ, true).RotatePrepend(new Vector3D(0, 0, 1), RB.theta).Done();
             }
             void MaintainRotationY(double secs)
             {
@@ -126,14 +137,14 @@ namespace Digging_Game_3.Models
                     if (Keyboard.IsDown(System.Windows.Input.Key.A)&&!Keyboard.IsDown(System.Windows.Input.Key.D)) DesiredRotationY = Math.PI;
                     if (Keyboard.IsDown(System.Windows.Input.Key.D)&&!Keyboard.IsDown(System.Windows.Input.Key.A)) DesiredRotationY = 0;
                 }
-                MyLib.SmoothTo(ref RotationY, DesiredRotationY, secs, Math.Max(Math.Abs(DesiredRotationY - RotationY) / Math.PI, 0.2) * 0.2);
-                MyLib.Set(SubTransforms, TransformIndexRotateAroundY, true).RotatePrepend(new Vector3D(0, -1, 0), RotationY).Done();
+                NextRotationY = RotationY;
+                MyLib.SmoothTo(ref NextRotationY, DesiredRotationY, secs, Math.Max(Math.Abs(DesiredRotationY - RotationY) / Math.PI, 0.2) * 0.2);
             }
             public delegate void RigidBodyUpdatingEventHandler(double secs,RigidBody rb);
             public RigidBodyUpdatingEventHandler RigidBodyUpdating;
             void MaintainRigidBody(double secs)
             {
-                if (!RB.Update(secs, rb =>
+                if (!NextRB.Update(secs, rb =>
                 {
                     if (secs > 1e-3) return false;
                     var dif = (rb.position - rb._position).Length;
@@ -206,6 +217,7 @@ namespace Digging_Game_3.Models
                 }
             }
             RigidBody RB = new RigidBody { mass = 0.8 };
+            RigidBody NextRB = null;
             public Matrix3D MatrixT
             {
                 get

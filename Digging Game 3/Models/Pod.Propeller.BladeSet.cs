@@ -58,7 +58,7 @@ namespace Digging_Game_3.Models
                 public Propeller Parent { get; private set; }
                 public BladeSet(Propeller parent, Types type, double radius, bool reversed, double speedRatio, double angleOffset) : base(parent, type, radius, reversed, speedRatio, angleOffset)
                 {
-                    Kernel.Heart.Beat += (secs) =>
+                    Kernel.Heart.Beat1 += (secs) =>
                     {
                         MyLib.Set(SubTransforms, TransformIndexTheta, false).RotatePrepend(new Vector3D(0, 0, 1), (Reversed ? -1 : 1) * (secs * SpeedRatio * 5 * Parent.omega)).Done();
                         UpdateTransform();

@@ -93,7 +93,7 @@ namespace Digging_Game_3.Models
             public Propeller(Types propellerType) : base(propellerType)
             {
                 bool foldingTarget = false;
-                Kernel.Heart.Beat += (secs) =>
+                Kernel.Heart.Beat1 += (secs) =>
                 {
                     double torque = 0, frictionTorque = 0;
                     //keyboard control

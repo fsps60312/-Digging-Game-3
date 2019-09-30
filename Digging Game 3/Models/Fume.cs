@@ -13,7 +13,7 @@ namespace Digging_Game_3.Models
         public static Fumes Instance;
         public Fumes():base()
         {
-            Kernel.Heart.Beat += secs =>
+            Kernel.Heart.Beat1 += secs =>
               {
                   List<Fume> trash = new List<Fume>();
                   foreach (var fume in fumes)

@@ -17,7 +17,7 @@ namespace Digging_Game_3.Models
                     const int TransformIndexPosition = 0;
                     public Tooth(Point3D position) : base(position)
                     {
-                        Kernel.Heart.Beat += secs => UpdateTransform();
+                        Kernel.Heart.Beat2 += () => UpdateTransform();
                     }
                     private Point3D _Position;
                     public Point3D Position

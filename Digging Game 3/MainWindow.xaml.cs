@@ -162,9 +162,10 @@ namespace Digging_Game_3
         }
         void MonitorKeys()
         {
-            Kernel.Heart.Beat += (secs) =>
+            MyLib.MyTrans trans = null;
+            Kernel.Heart.Beat1 += (secs) =>
             {
-                var trans = MyLib.Transform(Kernel.CameraProperties.BaseTransform);
+                trans = MyLib.Transform(Kernel.CameraProperties.BaseTransform);
                 {
                     const double disDelta = 0.1, angleDelta = 2 * Math.PI / 180;
                     Vector3D
@@ -186,6 +187,9 @@ namespace Digging_Game_3
                     if (Keyboard.IsDown(Key.R)) trans.TranslatePrepend(-z * disDelta);
                     if (Keyboard.IsDown(Key.Y)) trans.TranslatePrepend(z * disDelta);
                 }
+            };
+            Kernel.Heart.Beat2 += () =>
+            {
                 Kernel.CameraProperties.BaseTransform = trans.Value;
             };
         }

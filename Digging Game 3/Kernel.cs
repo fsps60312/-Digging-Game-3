@@ -18,11 +18,14 @@ namespace Digging_Game_3
         }
         public static class Heart
         {
-            public delegate void HeartBeatEventHandler(double secs);
-            public static event HeartBeatEventHandler Beat;
+            public delegate void HeartBeat1EventHandler(double secs);
+            public delegate void HeartBeat2EventHandler();
+            public static event HeartBeat1EventHandler Beat1;
+            public static event HeartBeat2EventHandler Beat2;
             public static void MakeBeat(double secs)
             {
-                Beat?.Invoke(secs);
+                Beat1?.Invoke(secs);
+                Beat2?.Invoke();
                 var trans = MyLib.Transform(CameraProperties.BaseTransform);
                 trans = trans.TranslatePrepend(CameraProperties.position - new Point3D());
                 var cross = Vector3D.CrossProduct(Kernel.Camera.LookDirection, CameraProperties.lookDirection);
