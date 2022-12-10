@@ -34,6 +34,8 @@ namespace Digging_Game_3.Models
                     //drill.Folding = System.Math.Abs(System.DateTime.Now.Ticks % 100000000 - 50000000) / 50000000.0;
                     {
                         RB.position.Z = RB.velocity.Z = 0;
+                        //RB.position.X = RB.position.Y = 0;
+                        //RB.velocity.X = RB.velocity.Y = 0;
                         RB.force = new Vector3D();
                         RigidBodyUpdating?.Invoke(secs, RB);
                         RB.force += new Vector3D(0, -RB.mass * Constants.Gravity, 0);

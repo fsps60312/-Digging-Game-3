@@ -20,9 +20,13 @@ namespace Digging_Game_3.Models
             {
                 SubTransforms.Add(new MatrixTransform3D());//Withdraw
                 SubTransforms.Add(new MatrixTransform3D());//Rotate
+                double accu_sec = 0;
                 Kernel.Heart.Beat1 += (secs) =>
                 {
                     MyLib.Set(SubTransforms, TransformIndexRotate).RotatePrepend(new Vector3D(0, 0, 1), secs * Math.PI).Done();
+                    accu_sec += secs;
+                    accu_sec %= 1;
+                    Folding = 1-accu_sec;
                     UpdateTransform();
                 };
             }

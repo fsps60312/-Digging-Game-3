@@ -28,7 +28,6 @@ namespace Digging_Game_3.Models
                     public Gear(Point3D desiredPosition,double radius,double suspensionHardness,double mass, Body parent) : base(desiredPosition,radius, suspensionHardness,mass,parent)
                     {
                         var preMatrixY = Parent.MatrixY;
-                        var preMatrixZ = Parent.MatrixZ;
                         Parent.RigidBodyUpdating += (secs,rb) =>
                         {
                             {
@@ -38,7 +37,6 @@ namespace Digging_Game_3.Models
                                 RB.position = newPosition;
                                 //RB.velocity.X = newVelocity.X; RB.velocity.Y = newVelocity.Y;
                                 preMatrixY = Parent.MatrixY;
-                                preMatrixZ = Parent.MatrixZ;
                             }
                             var parentVelocity = rb.GetVelocityAt(RelativePosition * Parent.MatrixY);
                             var f1 = ReactForce;
@@ -63,7 +61,7 @@ namespace Digging_Game_3.Models
                                 RB.force.X += friction;
                             }
                             RB.theta += secs * Parent.TrackSpeed / Radius;
-                            UpdateRigitBody(secs, parentVelocity);
+                            UpdateRigitBody(secs);
                             ///minimize: (px+a*fx)^2+(py+a*fy)^2
                             ///2(px+a*fx)*fx+2(py+a*fy)*fy=0
                             ///px*fx+a*fx*fx+py*fy+a*fy*fy=0
@@ -86,7 +84,7 @@ namespace Digging_Game_3.Models
                     Vector3D ReactForce { get { return SuspensionHardness * (Position - DesiredPosition); } }
                     double onGround = 0;
                     public bool IsOnGround { get { return onGround > 0; } }
-                    void UpdateRigitBody(double secs,Vector3D parentVelocity)
+                    void UpdateRigitBody(double secs)
                     {
                         if (!RB.Update(secs, rb =>
                         {
@@ -174,8 +172,8 @@ namespace Digging_Game_3.Models
                             return true;
                         }))
                         {
-                            UpdateRigitBody(0.5 * secs,parentVelocity);
-                            UpdateRigitBody(0.5 * secs,parentVelocity);
+                            UpdateRigitBody(0.5 * secs);
+                            UpdateRigitBody(0.5 * secs);
                         };
                     }
                     protected override Model3D CreateModel(params object[] vs)

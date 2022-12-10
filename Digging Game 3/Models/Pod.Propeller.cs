@@ -11,7 +11,7 @@ namespace Digging_Game_3.Models
     {
         partial class Propeller : My3DObject
         {
-            public double omega = 0;
+            private double omega = 0;
             public class PropertyDescription
             {
                 public double friction=1;

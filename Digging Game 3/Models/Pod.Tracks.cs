@@ -44,7 +44,7 @@ namespace Digging_Game_3.Models
                     {
                         double r = 0;
                         var initialChainLength = GetChainLength(gears);
-                        parent.RigidBodyUpdating+= (secs,rb) =>
+                        Kernel.Heart.Beat1+= (secs) =>
                           {
                               var chainLength = GetChainLength(gears);
                               if (double.IsNaN(chainLength)) chainLength = initialChainLength;
@@ -123,19 +123,18 @@ namespace Digging_Game_3.Models
                     const double depth = 1, height = 1, lengthUp = 4, lengthDown = 2.5;
                     var chain = new List<Tuple<Point3D, double,double, double>>
                     {                       //      relative position,                                  radius, mass,   suspension hardness
-                        Tuple.Create( new Point3D(-lengthUp / 2, -height / 2+0.4, 0),                   0.4,    0.02,   7.0/2   ),
-                        Tuple.Create( new Point3D((lengthDown*1-lengthUp*3) / 4/2, -height / 2+0.2, 0), 0.2,    0.025,  10.0/2  ),
-                        Tuple.Create( new Point3D((lengthDown*2-lengthUp*2) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   10.0/2  ),
-                        Tuple.Create( new Point3D((lengthDown*3-lengthUp*1) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   20.0/2  ),
-                        Tuple.Create( new Point3D(lengthDown / 2, -height / 2+0.5, 0),                  0.5,    0.045,  15.0/2  ),
-                        Tuple.Create( new Point3D(lengthUp / 2, height / 2, 0),                         0.2,    0.01,   10.0/2  ),
-                        Tuple.Create( new Point3D(-lengthUp/10, height / 2, 0),                         0.3,    0.01,   10.0/2  ),
-                    }.Select(p => new Tuple<Point3D, double,double, double>(p.Item1 + offset, p.Item2, p.Item3,p.Item4)).ToList();
+                        Tuple.Create(offset+ new Point3D(-lengthUp / 2, -height / 2+0.4, 0),                   0.4,    0.02,   7.0   ),
+                        Tuple.Create(offset+ new Point3D((lengthDown*1-lengthUp*3) / 4/2, -height / 2+0.2, 0), 0.2,    0.025,  10.0  ),
+                        Tuple.Create(offset+ new Point3D((lengthDown*2-lengthUp*2) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   10.0  ),
+                        Tuple.Create(offset+ new Point3D((lengthDown*3-lengthUp*1) / 4/2, -height / 2+0.2, 0), 0.2,    0.03,   20.0  ),
+                        Tuple.Create(offset+ new Point3D(lengthDown / 2, -height / 2+0.5, 0),                  0.5,    0.045,  15.0  ),
+                        Tuple.Create(offset+ new Point3D(lengthUp / 2, height / 2, 0),                         0.2,    0.01,   10.0  ),
+                        Tuple.Create(offset+ new Point3D(-lengthUp/10, height / 2, 0),                         0.3,    0.01,   10.0  ),
+                    };
                     Model3DGroup ans = new Model3DGroup();
                     foreach (var gv in chain)
                     {
-                        var p = gv.Item1;
-                        var gear = new Gear(p, gv.Item2, gv.Item4 * 2, gv.Item3, Parent);
+                        var gear = new Gear(gv.Item1, gv.Item2, gv.Item4, gv.Item3, Parent);
                         ans.Children.Add(gear.Model);
                         gears.Add(gear);
                     }
